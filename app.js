@@ -175,14 +175,20 @@ function resetData() {
 function updateP(field, val) { state.data.personalInfo[field] = val; renderPreview(); }
 
 // Experience
-function addExp() { state.data.experiences.push({id:gid(),company:'',position:'',startDate:'',endDate:'',current:false,description:''}); autoSave(); render(); }
+function addExp() { state.data.experiences.push({id:gid(),company:'',position:'',startDate:'',endDate:'',current:false,description:'',docs:[]}); autoSave(); render(); }
 function updExp(id,f,v) { var e=state.data.experiences.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
 function rmExp(id) { state.data.experiences=state.data.experiences.filter(function(x){return x.id!=id;}); autoSave(); render(); }
+function addExpDoc(id) { var e=state.data.experiences.find(function(x){return x.id==id;}); if(e){if(!e.docs)e.docs=[];e.docs.push({name:'',url:''});render();} }
+function updExpDoc(id,i,f,v) { var e=state.data.experiences.find(function(x){return x.id==id;}); if(e&&e.docs&&e.docs[i]){e.docs[i][f]=v;renderPreview();} }
+function rmExpDoc(id,i) { var e=state.data.experiences.find(function(x){return x.id==id;}); if(e&&e.docs){e.docs.splice(i,1);autoSave();render();} }
 
 // Education
-function addEdu() { state.data.education.push({id:gid(),institution:'',degree:'',startDate:'',endDate:'',description:''}); autoSave(); render(); }
+function addEdu() { state.data.education.push({id:gid(),institution:'',degree:'',startDate:'',endDate:'',description:'',docs:[]}); autoSave(); render(); }
 function updEdu(id,f,v) { var e=state.data.education.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
 function rmEdu(id) { state.data.education=state.data.education.filter(function(x){return x.id!=id;}); autoSave(); render(); }
+function addEduDoc(id) { var e=state.data.education.find(function(x){return x.id==id;}); if(e){if(!e.docs)e.docs=[];e.docs.push({name:'',url:''});render();} }
+function updEduDoc(id,i,f,v) { var e=state.data.education.find(function(x){return x.id==id;}); if(e&&e.docs&&e.docs[i]){e.docs[i][f]=v;renderPreview();} }
+function rmEduDoc(id,i) { var e=state.data.education.find(function(x){return x.id==id;}); if(e&&e.docs){e.docs.splice(i,1);autoSave();render();} }
 
 // Skills
 function addSkill() { var inp=document.getElementById('skillInp'); var v=inp?inp.value.trim():''; if(v&&state.data.skills.indexOf(v)===-1){state.data.skills.push(v);autoSave();render();} }
@@ -195,19 +201,25 @@ function updLang(i,f,v) { state.data.languages[i][f]=v; renderPreview(); }
 function rmLang(i) { state.data.languages.splice(i,1); autoSave(); render(); }
 
 // Certifications
-function addCert() { state.data.certifications.push({name:'',issuer:'',date:'',link:''}); autoSave(); render(); }
+function addCert() { state.data.certifications.push({name:'',issuer:'',date:'',link:'',docUrl:''}); autoSave(); render(); }
 function updCert(i,f,v) { state.data.certifications[i][f]=v; renderPreview(); }
 function rmCert(i) { state.data.certifications.splice(i,1); autoSave(); render(); }
 
 // Projects
-function addProj() { state.data.projects.push({id:gid(),name:'',description:'',role:'',link:''}); autoSave(); render(); }
+function addProj() { state.data.projects.push({id:gid(),name:'',description:'',role:'',link:'',docs:[]}); autoSave(); render(); }
 function updProj(id,f,v) { var e=state.data.projects.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
 function rmProj(id) { state.data.projects=state.data.projects.filter(function(x){return x.id!=id;}); autoSave(); render(); }
+function addProjDoc(id) { var e=state.data.projects.find(function(x){return x.id==id;}); if(e){if(!e.docs)e.docs=[];e.docs.push({name:'',url:''});render();} }
+function updProjDoc(id,i,f,v) { var e=state.data.projects.find(function(x){return x.id==id;}); if(e&&e.docs&&e.docs[i]){e.docs[i][f]=v;renderPreview();} }
+function rmProjDoc(id,i) { var e=state.data.projects.find(function(x){return x.id==id;}); if(e&&e.docs){e.docs.splice(i,1);autoSave();render();} }
 
 // Organizations
-function addOrg() { state.data.organizations.push({id:gid(),name:'',role:'',description:''}); autoSave(); render(); }
+function addOrg() { state.data.organizations.push({id:gid(),name:'',role:'',description:'',docs:[]}); autoSave(); render(); }
 function updOrg(id,f,v) { var e=state.data.organizations.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
 function rmOrg(id) { state.data.organizations=state.data.organizations.filter(function(x){return x.id!=id;}); autoSave(); render(); }
+function addOrgDoc(id) { var e=state.data.organizations.find(function(x){return x.id==id;}); if(e){if(!e.docs)e.docs=[];e.docs.push({name:'',url:''});render();} }
+function updOrgDoc(id,i,f,v) { var e=state.data.organizations.find(function(x){return x.id==id;}); if(e&&e.docs&&e.docs[i]){e.docs[i][f]=v;renderPreview();} }
+function rmOrgDoc(id,i) { var e=state.data.organizations.find(function(x){return x.id==id;}); if(e&&e.docs){e.docs.splice(i,1);autoSave();render();} }
 
 // PDF Export
 function exportPDF() {
@@ -237,6 +249,7 @@ function renderForm() {
   if (s === 'projects') return formProjects();
   if (s === 'organizations') return formOrganizations();
   if (s === 'import') return formImport();
+  if (s === 'review') return formReview();
   if (s === 'template') return formTemplate();
   return '';
 }
@@ -277,7 +290,9 @@ function formExperience() {
       '<div><label class="field-label">Tanggal Selesai</label><input class="field-input" type="month" value="'+esc(exp.endDate)+'" oninput="updExp('+exp.id+',\'endDate\',this.value)"'+(exp.current?' disabled':'')+'>'+
       '<label style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;color:#64748b;cursor:pointer"><input type="checkbox" '+(exp.current?'checked':'')+' onchange="updExp('+exp.id+',\'current\',this.checked);render()"> Masih bekerja di sini</label></div>' +
       txta('Deskripsi Tugas & Pencapaian',exp.description,"updExp("+exp.id+",'description',this.value)",'Pisahkan setiap poin dengan Enter. Gunakan format: Kata kerja aktif + tugas + hasil terukur',4,'col-full') +
-      '</div></div>';
+      '</div>' +
+      renderDocs(exp.docs || [], 'Exp', exp.id) +
+      '</div>';
   });
   html += '<button class="btn-add" onclick="addExp()">+ Tambah Pengalaman Kerja</button>';
   html += atsTip('Pengalaman Kerja', 'Mulai setiap bullet point dengan kata kerja aktif (Memimpin, Menganalisis, Mengembangkan). Sertakan angka dan metrik: "Meningkatkan efisiensi 30%" lebih kuat dari "Meningkatkan efisiensi".');
@@ -294,7 +309,9 @@ function formEducation() {
       inp('Tahun Mulai','text',edu.startDate,"updEdu("+edu.id+",'startDate',this.value)",'2019','') +
       inp('Tahun Selesai','text',edu.endDate,"updEdu("+edu.id+",'endDate',this.value)",'2023','') +
       txta('Keterangan Tambahan',edu.description,"updEdu("+edu.id+",'description',this.value)",'IPK, prestasi akademik, organisasi kampus...',2,'col-full') +
-      '</div></div>';
+      '</div>' +
+      renderDocs(edu.docs || [], 'Edu', edu.id) +
+      '</div>';
   });
   html += '<button class="btn-add" onclick="addEdu()">+ Tambah Pendidikan</button>';
   return html;
@@ -336,7 +353,8 @@ function formCertifications() {
       inp('Nama Sertifikasi','text',c.name,"updCert("+i+",'name',this.value)",'Contoh: CPA, PMP, AWS Certified','col-full') +
       inp('Lembaga Penerbit','text',c.issuer,"updCert("+i+",'issuer',this.value)",'Nama lembaga','') +
       inp('Tanggal Terbit','text',c.date,"updCert("+i+",'date',this.value)",'2023','') +
-      inp('Link Kredensial (opsional)','text',c.link,"updCert("+i+",'link',this.value)",'https://...','col-full') +
+      inp('Link Kredensial','text',c.link,"updCert("+i+",'link',this.value)",'https://credential.net/...','col-full') +
+      inp('📎 Link Dokumen/Sertifikat (GDrive)','text',c.docUrl||'',"updCert("+i+",'docUrl',this.value)",'https://drive.google.com/...','col-full') +
       '</div></div>';
   });
   html += '<button class="btn-add" onclick="addCert()">+ Tambah Sertifikasi</button>';
@@ -353,7 +371,9 @@ function formProjects() {
       inp('Peran Anda','text',proj.role,"updProj("+proj.id+",'role',this.value)",'Project Lead, Developer, dll','') +
       inp('Link Proyek (opsional)','text',proj.link,"updProj("+proj.id+",'link',this.value)",'https://...','') +
       txta('Deskripsi Proyek',proj.description,"updProj("+proj.id+",'description',this.value)",'Jelaskan proyek, teknologi yang digunakan, dan dampaknya...',3,'col-full') +
-      '</div></div>';
+      '</div>' +
+      renderDocs(proj.docs || [], 'Proj', proj.id) +
+      '</div>';
   });
   html += '<button class="btn-add" onclick="addProj()">+ Tambah Proyek</button>';
   return html;
@@ -367,9 +387,129 @@ function formOrganizations() {
       inp('Nama Organisasi','text',org.name,"updOrg("+org.id+",'name',this.value)",'Nama organisasi','col-full') +
       inp('Peran / Jabatan','text',org.role,"updOrg("+org.id+",'role',this.value)",'Ketua, Anggota, Volunteer','col-full') +
       txta('Deskripsi Kegiatan',org.description,"updOrg("+org.id+",'description',this.value)",'Jelaskan kontribusi dan pencapaian Anda...',2,'col-full') +
-      '</div></div>';
+      '</div>' +
+      renderDocs(org.docs || [], 'Org', org.id) +
+      '</div>';
   });
   html += '<button class="btn-add" onclick="addOrg()">+ Tambah Organisasi</button>';
+  return html;
+}
+
+// --- Document/Certificate Link Helper ---
+function renderDocs(docs, type, parentId) {
+  var html = '<div style="margin-top:10px;padding-top:10px;border-top:1px dashed #e2e8f0">';
+  if (docs && docs.length) {
+    docs.forEach(function(doc, i) {
+      html += '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">' +
+        '<span style="font-size:14px">📎</span>' +
+        '<input class="field-input" value="'+esc(doc.name)+'" oninput="upd'+type+'Doc('+parentId+','+i+',\'name\',this.value)" placeholder="Nama dokumen" style="flex:1;padding:6px 10px;font-size:12px">' +
+        '<input class="field-input" value="'+esc(doc.url)+'" oninput="upd'+type+'Doc('+parentId+','+i+',\'url\',this.value)" placeholder="Link Google Drive / URL" style="flex:1.5;padding:6px 10px;font-size:12px">' +
+        '<button class="btn-remove" style="position:static;font-size:16px" onclick="rm'+type+'Doc('+parentId+','+i+')">&times;</button>' +
+      '</div>';
+    });
+  }
+  html += '<button onclick="add'+type+'Doc('+parentId+')" style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px dashed #cbd5e1;border-radius:8px;background:transparent;color:#3b82f6;font-size:12px;cursor:pointer;font-family:inherit;width:100%;justify-content:center;transition:all 0.2s" onmouseover="this.style.borderColor=\'#3b82f6\';this.style.background=\'#f8fafc\'" onmouseout="this.style.borderColor=\'#cbd5e1\';this.style.background=\'transparent\'">⊕ ADD DOCUMENT / CERTIFICATE</button>';
+  html += '</div>';
+  return html;
+}
+
+// --- Review Section ---
+function formReview() {
+  var d = state.data;
+  var score = 0;
+  var maxScore = 100;
+  var tips = [];
+
+  // Scoring logic
+  if (d.personalInfo.fullName) score += 8; else tips.push({section:'Pribadi', tip:'Tambahkan nama lengkap Anda'});
+  if (d.personalInfo.jobTitle) score += 7; else tips.push({section:'Pribadi', tip:'Tambahkan jabatan/posisi target'});
+  if (d.personalInfo.email) score += 5; else tips.push({section:'Pribadi', tip:'Tambahkan alamat email'});
+  if (d.personalInfo.phone) score += 5; else tips.push({section:'Pribadi', tip:'Tambahkan nomor telepon'});
+  if (d.personalInfo.location) score += 3;
+  if (d.personalInfo.linkedin) score += 5; else tips.push({section:'Pribadi', tip:'Tambahkan profil LinkedIn untuk meningkatkan kredibilitas'});
+  if (d.personalInfo.summary && d.personalInfo.summary.length > 50) score += 12; else if (d.personalInfo.summary) score += 6; else tips.push({section:'Pribadi', tip:'Tulis ringkasan profesional minimal 2-3 kalimat'});
+
+  if (d.experiences.length >= 2) score += 15; else if (d.experiences.length === 1) { score += 8; tips.push({section:'Pengalaman', tip:'Tambahkan minimal 2 pengalaman kerja'}); } else tips.push({section:'Pengalaman', tip:'Tambahkan pengalaman kerja — ini bagian terpenting CV'});
+
+  var hasDescriptions = d.experiences.filter(function(e){return e.description && e.description.length > 30;}).length;
+  if (hasDescriptions >= 2) score += 10; else tips.push({section:'Pengalaman', tip:'Tambahkan deskripsi tugas & pencapaian dengan bullet points'});
+
+  if (d.education.length >= 1) score += 10; else tips.push({section:'Pendidikan', tip:'Tambahkan riwayat pendidikan'});
+
+  if (d.skills.length >= 6) score += 10; else if (d.skills.length >= 3) { score += 5; tips.push({section:'Keahlian', tip:'Tambahkan lebih banyak skill (minimal 6) untuk meningkatkan skor ATS'}); } else tips.push({section:'Keahlian', tip:'Tambahkan keahlian teknis — sangat penting untuk ATS'});
+
+  if (d.certifications.length >= 1) score += 5; else tips.push({section:'Sertifikasi', tip:'Tambahkan sertifikasi profesional jika ada'});
+  if (d.languages.length >= 1) score += 3;
+  if (d.projects.length >= 1) score += 2;
+
+  // Cap at 100
+  if (score > maxScore) score = maxScore;
+
+  // Determine color
+  var color = '#ef4444'; // red
+  var label = 'Perlu Perbaikan';
+  if (score >= 70) { color = '#22c55e'; label = 'Bagus!'; }
+  else if (score >= 50) { color = '#f59e0b'; label = 'Cukup'; }
+
+  // Build HTML
+  var html = '<div class="section-title">✅ Review Resume</div>';
+
+  // Score circle
+  html += '<div style="text-align:center;padding:20px;background:linear-gradient(135deg,#f8fafc,#f1f5f9);border-radius:16px;margin-bottom:16px">';
+  html += '<div style="position:relative;width:100px;height:100px;margin:0 auto 12px">';
+  html += '<svg width="100" height="100" style="transform:rotate(-90deg)"><circle cx="50" cy="50" r="42" fill="none" stroke="#e2e8f0" stroke-width="8"/><circle cx="50" cy="50" r="42" fill="none" stroke="'+color+'" stroke-width="8" stroke-dasharray="'+Math.round(264*score/100)+' 264" stroke-linecap="round"/></svg>';
+  html += '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:22px;font-weight:700;color:'+color+'">'+score+'%</div>';
+  html += '</div>';
+  html += '<div style="font-size:14px;font-weight:600;color:#1e293b">'+esc(d.personalInfo.fullName || 'Anda')+', skor resume Anda: <span style="color:'+color+'">'+score+'%</span></div>';
+  html += '<div style="font-size:12px;color:#64748b;margin-top:4px">'+label+(score<70?' — Lihat saran perbaikan di bawah':'')+'</div>';
+  html += '</div>';
+
+  // Improvement tips
+  if (tips.length > 0) {
+    html += '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;color:#1e293b;margin-bottom:10px">🔧 Saran Perbaikan:</div>';
+    tips.forEach(function(t) {
+      html += '<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;font-size:12px">' +
+        '<span style="color:#f59e0b;font-size:14px;flex-shrink:0">⚠️</span>' +
+        '<div><span style="font-weight:600;color:#64748b">['+t.section+']</span> '+t.tip+'</div></div>';
+    });
+    html += '</div>';
+  }
+
+  // Section completeness
+  html += '<div style="font-size:13px;font-weight:600;color:#1e293b;margin-bottom:10px">📊 Kelengkapan Section:</div>';
+  var sections = [
+    {name:'Data Pribadi', done: !!(d.personalInfo.fullName && d.personalInfo.email && d.personalInfo.summary)},
+    {name:'Pengalaman Kerja', done: d.experiences.length >= 1},
+    {name:'Pendidikan', done: d.education.length >= 1},
+    {name:'Keahlian', done: d.skills.length >= 3},
+    {name:'Bahasa', done: d.languages.length >= 1},
+    {name:'Sertifikasi', done: d.certifications.length >= 1},
+    {name:'Proyek', done: d.projects.length >= 1},
+    {name:'Organisasi', done: d.organizations.length >= 1}
+  ];
+  sections.forEach(function(sec) {
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:4px;font-size:12px">' +
+      '<span>'+sec.name+'</span>' +
+      '<span style="color:'+(sec.done?'#22c55e':'#94a3b8')+';font-weight:600">'+(sec.done?'✅ Lengkap':'○ Belum')+'</span></div>';
+  });
+
+  // Document count
+  var totalDocs = 0;
+  d.experiences.forEach(function(e){if(e.docs)totalDocs+=e.docs.filter(function(x){return x.url;}).length;});
+  d.education.forEach(function(e){if(e.docs)totalDocs+=e.docs.filter(function(x){return x.url;}).length;});
+  d.certifications.forEach(function(c){if(c.docUrl)totalDocs++;});
+  d.projects.forEach(function(e){if(e.docs)totalDocs+=e.docs.filter(function(x){return x.url;}).length;});
+
+  html += '<div style="margin-top:14px;padding:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:12px;color:#1e40af">' +
+    '<strong>📎 Dokumen Terlampir:</strong> '+totalDocs+' file' +
+    (totalDocs === 0 ? '<br><span style="color:#64748b">Tambahkan link sertifikat/dokumen di setiap section untuk memperkuat CV Anda.</span>' : '') +
+    '</div>';
+
+  html += '<div style="margin-top:16px;display:flex;gap:8px">' +
+    '<button class="btn btn-primary" style="flex:1" onclick="exportPDF()">📥 Download PDF</button>' +
+    '<button class="btn btn-ghost" style="flex:1" onclick="saveData()">💾 Save Data</button>' +
+    '</div>';
+
   return html;
 }
 
@@ -570,6 +710,22 @@ function makeBullets(desc) {
   var lines = desc.split('\n').filter(function(l){return l.trim();});
   if (!lines.length) return '';
   return '<ul class="cv-bullets">' + lines.map(function(l){return '<li>'+esc(l)+'</li>';}).join('') + '</ul>';
+}
+
+// Render clickable document links in CV preview
+function renderCVDocs(docs) {
+  if (!docs || !docs.length) return '';
+  var validDocs = docs.filter(function(d){return d.url && d.name;});
+  if (!validDocs.length) return '';
+  return '<div style="margin-top:3px">' + validDocs.map(function(d) {
+    return '<a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="font-size:9pt;color:#2563eb;text-decoration:none;margin-right:10px">📎 '+esc(d.name)+'</a>';
+  }).join('') + '</div>';
+}
+
+function renderCertDocLink(cert) {
+  var url = cert.docUrl || cert.link || '';
+  if (!url) return '';
+  return ' <a href="'+esc(url)+'" target="_blank" rel="noopener" style="font-size:9pt;color:#2563eb;text-decoration:none">📎 Lihat Sertifikat</a>';
 }
 
 // --- TEMPLATE: MODERN CLEAN (Centered, background bar headers) ---
@@ -830,7 +986,9 @@ function cvATSClean() {
     ex.forEach(function(e) {
       html += '<div class="cv-entry"><div class="cv-entry-header"><h3>'+esc(e.position)+'</h3><span class="cv-entry-date">'+fmtDate(e.startDate)+' — '+(e.current?'Sekarang':fmtDate(e.endDate))+'</span></div>';
       html += '<div class="cv-entry-sub">'+esc(e.company)+'</div>';
-      html += makeBullets(e.description) + '</div>';
+      html += makeBullets(e.description);
+      html += renderCVDocs(e.docs);
+      html += '</div>';
     });
     html += '</div>';
   }
@@ -842,6 +1000,7 @@ function cvATSClean() {
       html += '<div class="cv-entry"><div class="cv-entry-header"><h3>'+esc(e.degree)+'</h3><span class="cv-entry-date">'+esc(e.startDate)+' — '+esc(e.endDate)+'</span></div>';
       html += '<div class="cv-entry-sub">'+esc(e.institution)+'</div>';
       if (e.description) html += '<div style="font-size:9.5pt;color:#4b5563;margin-top:2px">'+esc(e.description)+'</div>';
+      html += renderCVDocs(e.docs);
       html += '</div>';
     });
     html += '</div>';
@@ -860,6 +1019,7 @@ function cvATSClean() {
       html += '<div style="margin-bottom:4px;font-size:10pt"><strong>'+esc(c.name)+'</strong>';
       if (c.issuer) html += ' — '+esc(c.issuer);
       if (c.date) html += ' ('+esc(c.date)+')';
+      html += renderCertDocLink(c);
       html += '</div>';
     });
     html += '</div>';
@@ -871,6 +1031,7 @@ function cvATSClean() {
     pr.forEach(function(proj) {
       html += '<div class="cv-entry"><h3>'+esc(proj.name)+(proj.role?' — <span style="font-weight:400;font-style:italic">'+esc(proj.role)+'</span>':'')+'</h3>';
       if (proj.description) html += '<div style="font-size:10pt;color:#374151;margin-top:2px">'+esc(proj.description)+'</div>';
+      html += renderCVDocs(proj.docs);
       html += '</div>';
     });
     html += '</div>';
@@ -882,6 +1043,7 @@ function cvATSClean() {
     og.forEach(function(o) {
       html += '<div class="cv-entry"><h3>'+esc(o.name)+(o.role?' — <span style="font-weight:400;font-style:italic">'+esc(o.role)+'</span>':'')+'</h3>';
       if (o.description) html += '<div style="font-size:10pt;color:#374151;margin-top:2px">'+esc(o.description)+'</div>';
+      html += renderCVDocs(o.docs);
       html += '</div>';
     });
     html += '</div>';
@@ -1013,6 +1175,7 @@ function render() {
     {id:'projects', icon:'🚀', label:'Proyek'},
     {id:'organizations', icon:'🤝', label:'Organisasi'},
     {id:'import', icon:'📂', label:'Import CV'},
+    {id:'review', icon:'✅', label:'Review'},
     {id:'template', icon:'🎨', label:'Template'}
   ];
 
