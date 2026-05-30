@@ -5,8 +5,10 @@
  */
 
 // ============================================================
-// STATE MANAGEMENT
+// STATE MANAGEMENT + LOCAL STORAGE PERSISTENCE
 // ============================================================
+var STORAGE_KEY = 'cvbuilder_data_v1';
+
 var state = {
   section: 'personal',
   template: 'ats-clean',
@@ -21,6 +23,78 @@ var state = {
     organizations: []
   }
 };
+
+// Load saved data from localStorage on startup
+function loadSavedData() {
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      var parsed = JSON.parse(saved);
+      if (parsed && parsed.data && parsed.data.personalInfo) {
+        state.data = parsed.data;
+        if (parsed.template) state.template = parsed.template;
+        // Ensure all arrays exist (backward compatibility)
+        if (!state.data.experiences) state.data.experiences = [];
+        if (!state.data.education) state.data.education = [];
+        if (!state.data.skills) state.data.skills = [];
+        if (!state.data.languages) state.data.languages = [];
+        if (!state.data.certifications) state.data.certifications = [];
+        if (!state.data.projects) state.data.projects = [];
+        if (!state.data.organizations) state.data.organizations = [];
+        return true;
+      }
+    }
+  } catch(e) { /* ignore parse errors */ }
+  return false;
+}
+
+// Save current data to localStorage
+function saveToStorage() {
+  try {
+    var toSave = { data: state.data, template: state.template, savedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+  } catch(e) { /* storage full or unavailable */ }
+}
+
+// Manual save with visual feedback
+function saveData() {
+  saveToStorage();
+  // Show save confirmation
+  var btn = document.getElementById('saveBtn');
+  if (btn) {
+    btn.innerHTML = '✅ Tersimpan!';
+    btn.style.background = '#dcfce7';
+    btn.style.color = '#166534';
+    btn.style.borderColor = '#86efac';
+    setTimeout(function() {
+      btn.innerHTML = '💾 Save';
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2000);
+  }
+}
+
+// Auto-save debounce (saves 1 second after last change)
+var autoSaveTimer = null;
+function autoSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(function() {
+    saveToStorage();
+    updateSaveIndicator();
+  }, 1000);
+}
+
+// Update the small "last saved" indicator
+function updateSaveIndicator() {
+  var el = document.getElementById('saveIndicator');
+  if (el) {
+    var now = new Date();
+    el.textContent = 'Auto-saved ' + now.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+    el.style.opacity = '1';
+    setTimeout(function() { if (el) el.style.opacity = '0.6'; }, 2000);
+  }
+}
 
 // ============================================================
 // SAMPLE DATA (Akuntan / Auditor Senior)
@@ -83,15 +157,16 @@ function fmtDate(d) {
 // ACTIONS
 // ============================================================
 function setSection(s) { state.section = s; render(); }
-function setTemplate(t) { state.template = t; render(); }
+function setTemplate(t) { state.template = t; autoSave(); render(); }
 function scrollTabs(amount) {
   var el = document.getElementById('tabsScroll');
   if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
 }
-function loadSample() { state.data = JSON.parse(JSON.stringify(sampleData)); render(); }
+function loadSample() { state.data = JSON.parse(JSON.stringify(sampleData)); autoSave(); render(); }
 function resetData() {
   if (confirm('Yakin ingin menghapus semua data? Tindakan ini tidak bisa dibatalkan.')) {
     state.data = {personalInfo:{fullName:'',jobTitle:'',email:'',phone:'',location:'',linkedin:'',website:'',summary:''},experiences:[],education:[],skills:[],languages:[],certifications:[],projects:[],organizations:[]};
+    saveToStorage();
     render();
   }
 }
@@ -100,39 +175,39 @@ function resetData() {
 function updateP(field, val) { state.data.personalInfo[field] = val; renderPreview(); }
 
 // Experience
-function addExp() { state.data.experiences.push({id:gid(),company:'',position:'',startDate:'',endDate:'',current:false,description:''}); render(); }
+function addExp() { state.data.experiences.push({id:gid(),company:'',position:'',startDate:'',endDate:'',current:false,description:''}); autoSave(); render(); }
 function updExp(id,f,v) { var e=state.data.experiences.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
-function rmExp(id) { state.data.experiences=state.data.experiences.filter(function(x){return x.id!=id;}); render(); }
+function rmExp(id) { state.data.experiences=state.data.experiences.filter(function(x){return x.id!=id;}); autoSave(); render(); }
 
 // Education
-function addEdu() { state.data.education.push({id:gid(),institution:'',degree:'',startDate:'',endDate:'',description:''}); render(); }
+function addEdu() { state.data.education.push({id:gid(),institution:'',degree:'',startDate:'',endDate:'',description:''}); autoSave(); render(); }
 function updEdu(id,f,v) { var e=state.data.education.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
-function rmEdu(id) { state.data.education=state.data.education.filter(function(x){return x.id!=id;}); render(); }
+function rmEdu(id) { state.data.education=state.data.education.filter(function(x){return x.id!=id;}); autoSave(); render(); }
 
 // Skills
-function addSkill() { var inp=document.getElementById('skillInp'); var v=inp?inp.value.trim():''; if(v&&state.data.skills.indexOf(v)===-1){state.data.skills.push(v);render();} }
-function rmSkill(i) { state.data.skills.splice(i,1); render(); }
+function addSkill() { var inp=document.getElementById('skillInp'); var v=inp?inp.value.trim():''; if(v&&state.data.skills.indexOf(v)===-1){state.data.skills.push(v);autoSave();render();} }
+function rmSkill(i) { state.data.skills.splice(i,1); autoSave(); render(); }
 function skillKey(e) { if(e.key==='Enter'){e.preventDefault();addSkill();} }
 
 // Languages
-function addLang() { state.data.languages.push({name:'',level:'Menengah'}); render(); }
+function addLang() { state.data.languages.push({name:'',level:'Menengah'}); autoSave(); render(); }
 function updLang(i,f,v) { state.data.languages[i][f]=v; renderPreview(); }
-function rmLang(i) { state.data.languages.splice(i,1); render(); }
+function rmLang(i) { state.data.languages.splice(i,1); autoSave(); render(); }
 
 // Certifications
-function addCert() { state.data.certifications.push({name:'',issuer:'',date:'',link:''}); render(); }
+function addCert() { state.data.certifications.push({name:'',issuer:'',date:'',link:''}); autoSave(); render(); }
 function updCert(i,f,v) { state.data.certifications[i][f]=v; renderPreview(); }
-function rmCert(i) { state.data.certifications.splice(i,1); render(); }
+function rmCert(i) { state.data.certifications.splice(i,1); autoSave(); render(); }
 
 // Projects
-function addProj() { state.data.projects.push({id:gid(),name:'',description:'',role:'',link:''}); render(); }
+function addProj() { state.data.projects.push({id:gid(),name:'',description:'',role:'',link:''}); autoSave(); render(); }
 function updProj(id,f,v) { var e=state.data.projects.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
-function rmProj(id) { state.data.projects=state.data.projects.filter(function(x){return x.id!=id;}); render(); }
+function rmProj(id) { state.data.projects=state.data.projects.filter(function(x){return x.id!=id;}); autoSave(); render(); }
 
 // Organizations
-function addOrg() { state.data.organizations.push({id:gid(),name:'',role:'',description:''}); render(); }
+function addOrg() { state.data.organizations.push({id:gid(),name:'',role:'',description:''}); autoSave(); render(); }
 function updOrg(id,f,v) { var e=state.data.organizations.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
-function rmOrg(id) { state.data.organizations=state.data.organizations.filter(function(x){return x.id!=id;}); render(); }
+function rmOrg(id) { state.data.organizations=state.data.organizations.filter(function(x){return x.id!=id;}); autoSave(); render(); }
 
 // PDF Export
 function exportPDF() {
@@ -924,6 +999,7 @@ function tplSelectorBtns() {
 function renderPreview() {
   var el = document.getElementById('cvOutput');
   if (el) el.innerHTML = renderCV();
+  autoSave(); // Auto-save after every data change
 }
 
 function render() {
@@ -956,6 +1032,8 @@ function render() {
         '<div class="header-actions">' +
           '<button class="btn btn-ghost" onclick="loadSample()">📋 Contoh Data</button>' +
           '<button class="btn btn-ghost" onclick="resetData()">🗑️ Reset</button>' +
+          '<button class="btn btn-ghost" id="saveBtn" onclick="saveData()">💾 Save</button>' +
+          '<span id="saveIndicator" style="font-size:10px;color:#94a3b8;transition:opacity 0.3s;opacity:0.6"></span>' +
           '<button class="btn btn-primary" onclick="exportPDF()">📥 Download PDF</button>' +
         '</div>' +
       '</div>' +
@@ -989,4 +1067,21 @@ function render() {
 // ============================================================
 // INITIALIZE
 // ============================================================
+// Load saved data from localStorage (if any)
+var hadSavedData = loadSavedData();
 render();
+
+// Show indicator if data was restored
+if (hadSavedData) {
+  setTimeout(function() {
+    var el = document.getElementById('saveIndicator');
+    if (el) {
+      el.textContent = '✅ Data sebelumnya dimuat';
+      el.style.opacity = '1';
+      el.style.color = '#166534';
+      setTimeout(function() {
+        if (el) { el.style.color = '#94a3b8'; el.style.opacity = '0.6'; el.textContent = ''; }
+      }, 3000);
+    }
+  }, 500);
+}
