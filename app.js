@@ -84,6 +84,10 @@ function fmtDate(d) {
 // ============================================================
 function setSection(s) { state.section = s; render(); }
 function setTemplate(t) { state.template = t; render(); }
+function scrollTabs(amount) {
+  var el = document.getElementById('tabsScroll');
+  if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
+}
 function loadSample() { state.data = JSON.parse(JSON.stringify(sampleData)); render(); }
 function resetData() {
   if (confirm('Yakin ingin menghapus semua data? Tindakan ini tidak bisa dibatalkan.')) {
@@ -157,6 +161,7 @@ function renderForm() {
   if (s === 'certifications') return formCertifications();
   if (s === 'projects') return formProjects();
   if (s === 'organizations') return formOrganizations();
+  if (s === 'import') return formImport();
   if (s === 'template') return formTemplate();
   return '';
 }
@@ -291,6 +296,159 @@ function formOrganizations() {
   });
   html += '<button class="btn-add" onclick="addOrg()">+ Tambah Organisasi</button>';
   return html;
+}
+
+function formImport() {
+  return '<div class="section-title">📂 Import / Upload CV</div>' +
+    '<p style="font-size:12px;color:#64748b;margin-bottom:16px;line-height:1.6">Upload CV yang sudah ada untuk diedit di sini. Anda bisa import dari file JSON (data CV Builder) atau file PDF/TXT untuk ekstraksi teks otomatis.</p>' +
+
+    // JSON Import
+    '<div class="entry-card" style="margin-bottom:14px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:18px">📋</span><div><div style="font-size:13px;font-weight:600;color:#1e293b">Import Data JSON</div><div style="font-size:11px;color:#64748b">File .json dari CV Builder (backup/export sebelumnya)</div></div></div>' +
+      '<label style="display:block;padding:14px;border:2px dashed #e2e8f0;border-radius:12px;text-align:center;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor=\'#3b82f6\';this.style.background=\'#f8fafc\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.background=\'transparent\'">' +
+        '<input type="file" accept=".json" onchange="importJSON(this)" style="display:none">' +
+        '<div style="font-size:12px;color:#64748b">📁 Klik untuk pilih file .json</div>' +
+      '</label>' +
+    '</div>' +
+
+    // PDF/TXT Import
+    '<div class="entry-card" style="margin-bottom:14px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:18px">📄</span><div><div style="font-size:13px;font-weight:600;color:#1e293b">Import dari PDF / TXT</div><div style="font-size:11px;color:#64748b">Ekstrak teks dari CV yang sudah ada (format .pdf atau .txt)</div></div></div>' +
+      '<label style="display:block;padding:14px;border:2px dashed #e2e8f0;border-radius:12px;text-align:center;cursor:pointer;transition:all 0.2s" onmouseover="this.style.borderColor=\'#3b82f6\';this.style.background=\'#f8fafc\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.background=\'transparent\'">' +
+        '<input type="file" accept=".pdf,.txt" onchange="importFile(this)" style="display:none">' +
+        '<div style="font-size:12px;color:#64748b">📁 Klik untuk pilih file .pdf atau .txt</div>' +
+      '</label>' +
+      '<div id="importPreview" style="margin-top:10px"></div>' +
+    '</div>' +
+
+    // Paste Text
+    '<div class="entry-card" style="margin-bottom:14px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:18px">📝</span><div><div style="font-size:13px;font-weight:600;color:#1e293b">Paste Teks CV</div><div style="font-size:11px;color:#64748b">Copy-paste isi CV Anda langsung di sini</div></div></div>' +
+      '<textarea class="field-input" id="pasteArea" rows="6" placeholder="Paste seluruh teks CV Anda di sini...\n\nContoh:\nNama: Ahmad Rizki\nEmail: ahmad@email.com\nPengalaman: ..."></textarea>' +
+      '<button class="btn btn-accent" style="margin-top:8px;width:100%" onclick="parsePastedCV()">🔍 Parsing & Isi Form Otomatis</button>' +
+    '</div>' +
+
+    // Export JSON
+    '<div class="entry-card">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><span style="font-size:18px">💾</span><div><div style="font-size:13px;font-weight:600;color:#1e293b">Export / Backup Data</div><div style="font-size:11px;color:#64748b">Simpan data CV Anda sebagai file JSON untuk backup</div></div></div>' +
+      '<button class="btn btn-ghost" style="width:100%" onclick="exportJSON()">💾 Download Backup (JSON)</button>' +
+    '</div>' +
+
+    atsTip('Import CV', 'Setelah import, periksa kembali setiap section untuk memastikan data terisi dengan benar. Parsing otomatis mungkin tidak sempurna — edit manual tetap diperlukan untuk hasil terbaik.');
+}
+
+// --- Import/Export Functions ---
+function importJSON(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      // Validate structure
+      if (data.personalInfo && data.personalInfo.fullName !== undefined) {
+        state.data = data;
+        // Ensure all arrays exist
+        if (!state.data.experiences) state.data.experiences = [];
+        if (!state.data.education) state.data.education = [];
+        if (!state.data.skills) state.data.skills = [];
+        if (!state.data.languages) state.data.languages = [];
+        if (!state.data.certifications) state.data.certifications = [];
+        if (!state.data.projects) state.data.projects = [];
+        if (!state.data.organizations) state.data.organizations = [];
+        render();
+        alert('✅ Data CV berhasil di-import! Silakan cek setiap tab.');
+      } else {
+        alert('❌ Format file JSON tidak valid. Pastikan file berasal dari CV Builder.');
+      }
+    } catch(err) {
+      alert('❌ Gagal membaca file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function importFile(input) {
+  var file = input.files[0];
+  if (!file) return;
+
+  if (file.name.endsWith('.txt')) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var text = e.target.result;
+      document.getElementById('pasteArea').value = text;
+      var preview = document.getElementById('importPreview');
+      if (preview) preview.innerHTML = '<div style="padding:10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:11px;color:#166534">✅ Teks berhasil dimuat (' + text.length + ' karakter). Klik "Parsing & Isi Form Otomatis" di bawah untuk memproses.</div>';
+    };
+    reader.readAsText(file);
+  } else if (file.name.endsWith('.pdf')) {
+    var preview = document.getElementById('importPreview');
+    if (preview) preview.innerHTML = '<div style="padding:10px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:11px;color:#92400e">⚠️ Untuk file PDF: Buka PDF di browser/reader, select all text (Ctrl+A), copy (Ctrl+C), lalu paste di kotak "Paste Teks CV" di bawah. Parsing PDF langsung membutuhkan library tambahan.</div>';
+  }
+}
+
+function exportJSON() {
+  var dataStr = JSON.stringify(state.data, null, 2);
+  var blob = new Blob([dataStr], {type: 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'CV_Backup_' + (state.data.personalInfo.fullName || 'data') + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function parsePastedCV() {
+  var text = document.getElementById('pasteArea');
+  if (!text || !text.value.trim()) {
+    alert('Silakan paste teks CV terlebih dahulu.');
+    return;
+  }
+  var raw = text.value.trim();
+  var lines = raw.split('\n').map(function(l){return l.trim();}).filter(function(l){return l;});
+
+  // Simple heuristic parser
+  var p = state.data.personalInfo;
+
+  // Try to find email
+  var emailMatch = raw.match(/[\w.-]+@[\w.-]+\.\w+/);
+  if (emailMatch) p.email = emailMatch[0];
+
+  // Try to find phone
+  var phoneMatch = raw.match(/(\+?\d[\d\s\-().]{8,})/);
+  if (phoneMatch) p.phone = phoneMatch[1].trim();
+
+  // Try to find LinkedIn
+  var linkedinMatch = raw.match(/linkedin\.com\/in\/[\w-]+/i);
+  if (linkedinMatch) p.linkedin = linkedinMatch[0];
+
+  // First line is often the name
+  if (lines.length > 0 && !lines[0].match(/@|http|linkedin|telp|phone/i)) {
+    p.fullName = lines[0];
+  }
+
+  // Look for summary-like paragraph (longest line that's not a header)
+  var longestLine = '';
+  lines.forEach(function(l) {
+    if (l.length > longestLine.length && l.length > 80 && !l.match(/^(pengalaman|pendidikan|keahlian|skill|education|experience)/i)) {
+      longestLine = l;
+    }
+  });
+  if (longestLine) p.summary = longestLine;
+
+  // Extract skills from common patterns
+  var skillSection = raw.match(/(?:keahlian|skills?|kompetensi|technical skills?)[\s:]*\n?([\s\S]*?)(?:\n\n|\n[A-Z])/i);
+  if (skillSection) {
+    var skillText = skillSection[1];
+    var skills = skillText.split(/[,;•·|\n]/).map(function(s){return s.replace(/^[\s\-\*]+/,'').trim();}).filter(function(s){return s && s.length < 40;});
+    if (skills.length > 0) state.data.skills = skills;
+  }
+
+  state.data.personalInfo = p;
+  render();
+  alert('✅ Parsing selesai! Data dasar telah diisi.\n\nSilakan periksa dan lengkapi setiap tab secara manual untuk hasil terbaik.');
 }
 
 function formTemplate() {
@@ -778,6 +936,7 @@ function render() {
     {id:'certifications', icon:'📜', label:'Sertifikasi'},
     {id:'projects', icon:'🚀', label:'Proyek'},
     {id:'organizations', icon:'🤝', label:'Organisasi'},
+    {id:'import', icon:'📂', label:'Import CV'},
     {id:'template', icon:'🎨', label:'Template'}
   ];
 
@@ -805,7 +964,11 @@ function render() {
     '<div class="main-layout">' +
       // LEFT PANEL
       '<div class="panel-left no-print">' +
-        '<div class="tabs-container">' + tabsHtml + '</div>' +
+        '<div class="tabs-wrapper">' +
+          '<button class="tab-scroll-btn left" onclick="scrollTabs(-150)" aria-label="Scroll kiri">&#8249;</button>' +
+          '<div class="tabs-container" id="tabsScroll">' + tabsHtml + '</div>' +
+          '<button class="tab-scroll-btn right" onclick="scrollTabs(150)" aria-label="Scroll kanan">&#8250;</button>' +
+        '</div>' +
         '<div class="form-scroll">' + renderForm() + '</div>' +
       '</div>' +
       // RIGHT PANEL
