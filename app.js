@@ -295,19 +295,23 @@ function formOrganizations() {
 
 function formTemplate() {
   var ts = [
-    {id:'ats-clean', name:'ATS Clean', color:'#1e3a5f', desc:'Optimal untuk sistem ATS'},
-    {id:'modern-blue', name:'Modern Blue', color:'#2563eb', desc:'Profesional & modern'},
-    {id:'executive', name:'Executive', color:'#1f2937', desc:'Formal & elegan'},
-    {id:'minimal-green', name:'Minimal', color:'#059669', desc:'Bersih & ringkas'}
+    {id:'ats-clean', name:'ATS Standard', color:'#1e3a5f', desc:'Minimalis, teks rata kiri, optimal ATS', icon:'📄'},
+    {id:'modern-clean', name:'Modern Minimalis', color:'#2563eb', desc:'Centered, background bar elegan', icon:'✨'},
+    {id:'executive-split', name:'Executive Two-Column', color:'#0f766e', desc:'Split layout, sidebar info pribadi', icon:'📊'},
+    {id:'modern-blue', name:'Modern Blue', color:'#3b82f6', desc:'Profesional dengan aksen biru', icon:'💎'},
+    {id:'executive', name:'Executive Formal', color:'#1f2937', desc:'Serif font, formal & elegan', icon:'🏛️'},
+    {id:'minimal-green', name:'Minimal Green', color:'#059669', desc:'Bersih, ringkas, aksen hijau', icon:'🌿'}
   ];
-  var html = '<div class="section-title">🎨 Pilih Template CV</div><div class="template-grid">';
+  var html = '<div class="section-title">🎨 Pilih Desain Template</div>' +
+    '<p style="font-size:12px;color:#64748b;margin-bottom:14px">Pilih template yang sesuai dengan industri dan posisi target Anda. Data form tidak akan berubah saat mengganti template.</p>' +
+    '<div class="template-grid">';
   ts.forEach(function(t) {
     html += '<div class="tpl-card'+(state.template===t.id?' active':'')+'" onclick="setTemplate(\''+t.id+'\')">' +
-      '<div class="tpl-color" style="background:'+t.color+'"></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><div class="tpl-color" style="background:'+t.color+'"></div><span style="font-size:16px">'+t.icon+'</span></div>' +
       '<div class="tpl-name">'+t.name+'</div><div class="tpl-desc">'+t.desc+'</div></div>';
   });
   html += '</div>';
-  html += atsTip('Template', 'Template "ATS Clean" menggunakan format single-column tanpa tabel, grafik, atau elemen visual kompleks — format yang paling aman untuk lolos parsing ATS. Gunakan template ini jika melamar via portal online.');
+  html += atsTip('Template', 'Template "ATS Standard" menggunakan format single-column tanpa tabel atau grafik — paling aman untuk lolos parsing ATS. "Executive Two-Column" cocok untuk melamar langsung ke recruiter/headhunter. "Modern Minimalis" ideal untuk industri kreatif dan teknologi.');
   return html;
 }
 
@@ -320,6 +324,8 @@ function atsTip(context, tip) {
 // ============================================================
 function renderCV() {
   if (state.template === 'ats-clean') return cvATSClean();
+  if (state.template === 'modern-clean') return cvModernClean();
+  if (state.template === 'executive-split') return cvExecutiveSplit();
   if (state.template === 'modern-blue') return cvModernBlue();
   if (state.template === 'executive') return cvExecutive();
   if (state.template === 'minimal-green') return cvMinimalGreen();
@@ -332,6 +338,230 @@ function makeBullets(desc) {
   if (!lines.length) return '';
   return '<ul class="cv-bullets">' + lines.map(function(l){return '<li>'+esc(l)+'</li>';}).join('') + '</ul>';
 }
+
+// --- TEMPLATE: MODERN CLEAN (Centered, background bar headers) ---
+function cvModernClean() {
+  var p=state.data.personalInfo, ex=state.data.experiences, ed=state.data.education,
+      sk=state.data.skills, la=state.data.languages, ce=state.data.certifications,
+      pr=state.data.projects, og=state.data.organizations;
+
+  var secHead = function(title) {
+    return '<div style="margin-bottom:10px;margin-top:18px"><div style="background:#f1f5f9;border-left:3px solid #2563eb;padding:6px 12px;font-size:10.5pt;font-weight:700;color:#1e3a5f;text-transform:uppercase;letter-spacing:0.8px">'+title+'</div></div>';
+  };
+
+  var html = '<div class="cv-preview" style="font-family:Calibri,Arial,sans-serif">';
+
+  // Header - Centered
+  html += '<div style="text-align:center;padding-bottom:16px;margin-bottom:4px;border-bottom:2px solid #2563eb">';
+  html += '<h1 style="font-size:24pt;font-weight:700;color:#111;margin-bottom:4px">'+(p.fullName||'Nama Lengkap Anda')+'</h1>';
+  if (p.jobTitle) html += '<div style="font-size:11.5pt;color:#2563eb;font-weight:600;margin-bottom:8px">'+esc(p.jobTitle)+'</div>';
+  html += '<div style="font-size:9.5pt;color:#4b5563;display:flex;justify-content:center;flex-wrap:wrap;gap:6px">';
+  var contacts = [];
+  if (p.email) contacts.push('<span>'+esc(p.email)+'</span>');
+  if (p.phone) contacts.push('<span>'+esc(p.phone)+'</span>');
+  if (p.location) contacts.push('<span>'+esc(p.location)+'</span>');
+  if (p.linkedin) contacts.push('<span>'+esc(p.linkedin)+'</span>');
+  if (p.website) contacts.push('<span>'+esc(p.website)+'</span>');
+  html += contacts.join('<span style="color:#cbd5e1;margin:0 4px">|</span>');
+  html += '</div></div>';
+
+  // Summary
+  if (p.summary) {
+    html += secHead('Ringkasan Profesional');
+    html += '<p style="font-size:10pt;color:#374151;line-height:1.65;text-align:center;padding:0 16px">'+esc(p.summary)+'</p>';
+  }
+
+  // Experience
+  if (ex.length) {
+    html += secHead('Pengalaman Kerja');
+    ex.forEach(function(e) {
+      html += '<div class="cv-entry"><div class="cv-entry-header"><h3 style="font-size:10.5pt;font-weight:600">'+esc(e.position)+'</h3><span class="cv-entry-date" style="font-size:9pt;color:#6b7280">'+fmtDate(e.startDate)+' — '+(e.current?'Sekarang':fmtDate(e.endDate))+'</span></div>';
+      html += '<div style="font-size:9.5pt;color:#2563eb;font-weight:500">'+esc(e.company)+'</div>';
+      html += makeBullets(e.description) + '</div>';
+    });
+  }
+
+  // Education
+  if (ed.length) {
+    html += secHead('Pendidikan');
+    ed.forEach(function(e) {
+      html += '<div class="cv-entry"><div class="cv-entry-header"><h3 style="font-size:10.5pt;font-weight:600">'+esc(e.degree)+'</h3><span class="cv-entry-date" style="font-size:9pt">'+esc(e.startDate)+' — '+esc(e.endDate)+'</span></div>';
+      html += '<div style="font-size:9.5pt;color:#2563eb;font-weight:500">'+esc(e.institution)+'</div>';
+      if (e.description) html += '<div style="font-size:9.5pt;color:#4b5563;margin-top:2px">'+esc(e.description)+'</div>';
+      html += '</div>';
+    });
+  }
+
+  // Skills
+  if (sk.length) {
+    html += secHead('Keahlian');
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center">';
+    sk.forEach(function(s) { html += '<span style="padding:3px 10px;background:#eff6ff;color:#1e40af;border-radius:4px;font-size:9.5pt;border:1px solid #dbeafe">'+esc(s)+'</span>'; });
+    html += '</div>';
+  }
+
+  // Certifications
+  if (ce.length) {
+    html += secHead('Sertifikasi & Lisensi');
+    ce.forEach(function(c) {
+      html += '<div style="margin-bottom:4px;font-size:10pt;text-align:center"><strong>'+esc(c.name)+'</strong>';
+      if (c.issuer) html += ' — '+esc(c.issuer);
+      if (c.date) html += ' ('+esc(c.date)+')';
+      html += '</div>';
+    });
+  }
+
+  // Projects
+  if (pr.length) {
+    html += secHead('Proyek');
+    pr.forEach(function(proj) {
+      html += '<div class="cv-entry"><h3 style="font-size:10.5pt">'+esc(proj.name)+(proj.role?' — <span style="font-weight:400;font-style:italic">'+esc(proj.role)+'</span>':'')+'</h3>';
+      if (proj.description) html += '<div style="font-size:10pt;color:#374151;margin-top:2px">'+esc(proj.description)+'</div>';
+      html += '</div>';
+    });
+  }
+
+  // Organizations
+  if (og.length) {
+    html += secHead('Organisasi');
+    og.forEach(function(o) {
+      html += '<div class="cv-entry"><h3 style="font-size:10.5pt">'+esc(o.name)+(o.role?' — <span style="font-weight:400;font-style:italic">'+esc(o.role)+'</span>':'')+'</h3>';
+      if (o.description) html += '<div style="font-size:10pt;color:#374151;margin-top:2px">'+esc(o.description)+'</div>';
+      html += '</div>';
+    });
+  }
+
+  // Languages
+  if (la.length) {
+    html += secHead('Bahasa');
+    html += '<div style="display:flex;justify-content:center;gap:16px;flex-wrap:wrap">';
+    la.forEach(function(l) { html += '<span style="font-size:10pt;color:#374151">'+esc(l.name)+' <span style="color:#6b7280">('+esc(l.level)+')</span></span>'; });
+    html += '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+// --- TEMPLATE: EXECUTIVE SPLIT (Two-Column Layout) ---
+function cvExecutiveSplit() {
+  var p=state.data.personalInfo, ex=state.data.experiences, ed=state.data.education,
+      sk=state.data.skills, la=state.data.languages, ce=state.data.certifications,
+      pr=state.data.projects, og=state.data.organizations;
+
+  var sideHead = function(title) {
+    return '<div style="font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#0f766e;margin-bottom:8px;margin-top:16px;padding-bottom:4px;border-bottom:1px solid #d1d5db">'+title+'</div>';
+  };
+  var mainHead = function(title) {
+    return '<div style="margin-bottom:10px;margin-top:18px"><h2 style="font-size:11pt;font-weight:700;color:#0f766e;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:4px;border-bottom:1.5px solid #0f766e;margin:0">'+title+'</h2></div>';
+  };
+
+  var html = '<div class="cv-preview" style="font-family:Calibri,Arial,sans-serif;display:flex;min-height:297mm;padding:0">';
+
+  // === LEFT SIDEBAR ===
+  html += '<div style="width:34%;background:#f8fffe;border-right:1px solid #e2e8f0;padding:24px 18px">';
+
+  // Name & Title in sidebar
+  html += '<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid #0f766e">';
+  html += '<h1 style="font-size:16pt;font-weight:700;color:#111;line-height:1.2;margin:0">'+(p.fullName||'Nama Anda')+'</h1>';
+  if (p.jobTitle) html += '<div style="font-size:10pt;color:#0f766e;font-weight:600;margin-top:4px">'+esc(p.jobTitle)+'</div>';
+  html += '</div>';
+
+  // Contact
+  html += sideHead('Kontak');
+  html += '<div style="font-size:9pt;color:#374151;line-height:1.8">';
+  if (p.email) html += '<div>&#9993; '+esc(p.email)+'</div>';
+  if (p.phone) html += '<div>&#9742; '+esc(p.phone)+'</div>';
+  if (p.location) html += '<div>&#9673; '+esc(p.location)+'</div>';
+  if (p.linkedin) html += '<div>&#9741; '+esc(p.linkedin)+'</div>';
+  if (p.website) html += '<div>&#9788; '+esc(p.website)+'</div>';
+  html += '</div>';
+
+  // Skills as tags
+  if (sk.length) {
+    html += sideHead('Keahlian');
+    html += '<div style="display:flex;flex-wrap:wrap;gap:4px">';
+    sk.forEach(function(s) {
+      html += '<span style="display:inline-block;padding:3px 8px;background:#ccfbf1;color:#0f766e;border-radius:4px;font-size:8.5pt;font-weight:500;border:1px solid #99f6e4">'+esc(s)+'</span>';
+    });
+    html += '</div>';
+  }
+
+  // Languages
+  if (la.length) {
+    html += sideHead('Bahasa');
+    la.forEach(function(l) {
+      html += '<div style="font-size:9pt;color:#374151;margin-bottom:4px"><strong>'+esc(l.name)+'</strong> <span style="color:#6b7280">— '+esc(l.level)+'</span></div>';
+    });
+  }
+
+  // Certifications
+  if (ce.length) {
+    html += sideHead('Sertifikasi');
+    ce.forEach(function(c) {
+      html += '<div style="font-size:9pt;color:#374151;margin-bottom:6px"><strong>'+esc(c.name)+'</strong>';
+      if (c.issuer) html += '<br><span style="color:#6b7280;font-size:8.5pt">'+esc(c.issuer)+(c.date?', '+esc(c.date):'')+'</span>';
+      html += '</div>';
+    });
+  }
+
+  // Organizations (sidebar)
+  if (og.length) {
+    html += sideHead('Organisasi');
+    og.forEach(function(o) {
+      html += '<div style="font-size:9pt;color:#374151;margin-bottom:6px"><strong>'+esc(o.name)+'</strong>';
+      if (o.role) html += '<br><span style="color:#6b7280;font-size:8.5pt">'+esc(o.role)+'</span>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div>'; // end sidebar
+
+  // === RIGHT MAIN CONTENT ===
+  html += '<div style="width:66%;padding:24px 22px">';
+
+  // Summary
+  if (p.summary) {
+    html += mainHead('Ringkasan Profesional');
+    html += '<p style="font-size:10pt;color:#374151;line-height:1.65">'+esc(p.summary)+'</p>';
+  }
+
+  // Experience
+  if (ex.length) {
+    html += mainHead('Pengalaman Kerja');
+    ex.forEach(function(e) {
+      html += '<div class="cv-entry"><div class="cv-entry-header"><h3 style="font-size:10.5pt;font-weight:600;color:#111">'+esc(e.position)+'</h3><span class="cv-entry-date" style="font-size:9pt;color:#6b7280">'+fmtDate(e.startDate)+' — '+(e.current?'Sekarang':fmtDate(e.endDate))+'</span></div>';
+      html += '<div style="font-size:9.5pt;color:#0f766e;font-weight:500">'+esc(e.company)+'</div>';
+      html += makeBullets(e.description) + '</div>';
+    });
+  }
+
+  // Education
+  if (ed.length) {
+    html += mainHead('Pendidikan');
+    ed.forEach(function(e) {
+      html += '<div class="cv-entry"><div class="cv-entry-header"><h3 style="font-size:10.5pt;font-weight:600">'+esc(e.degree)+'</h3><span class="cv-entry-date" style="font-size:9pt">'+esc(e.startDate)+' — '+esc(e.endDate)+'</span></div>';
+      html += '<div style="font-size:9.5pt;color:#0f766e;font-weight:500">'+esc(e.institution)+'</div>';
+      if (e.description) html += '<div style="font-size:9.5pt;color:#4b5563;margin-top:2px">'+esc(e.description)+'</div>';
+      html += '</div>';
+    });
+  }
+
+  // Projects
+  if (pr.length) {
+    html += mainHead('Proyek');
+    pr.forEach(function(proj) {
+      html += '<div class="cv-entry"><h3 style="font-size:10.5pt;font-weight:600">'+esc(proj.name)+(proj.role?' — <span style="font-weight:400;font-style:italic;color:#6b7280">'+esc(proj.role)+'</span>':'')+'</h3>';
+      if (proj.description) html += '<div style="font-size:10pt;color:#374151;margin-top:2px">'+esc(proj.description)+'</div>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div>'; // end main content
+  html += '</div>'; // end flex container
+  return html;
+}
+
 
 // --- TEMPLATE 1: ATS CLEAN (Optimal for ATS) ---
 function cvATSClean() {
@@ -513,6 +743,24 @@ function cvMinimalGreen() {
 }
 
 // ============================================================
+// TEMPLATE SELECTOR (Dashboard above preview)
+// ============================================================
+function tplSelectorBtns() {
+  var ts = [
+    {id:'ats-clean', label:'ATS Standard'},
+    {id:'modern-clean', label:'Modern Minimalis'},
+    {id:'executive-split', label:'Executive Two-Column'},
+    {id:'modern-blue', label:'Modern Blue'},
+    {id:'executive', label:'Executive Formal'},
+    {id:'minimal-green', label:'Minimal Green'}
+  ];
+  return ts.map(function(t) {
+    var isActive = state.template === t.id;
+    return '<button onclick="setTemplate(\''+t.id+'\')" style="padding:5px 12px;border-radius:8px;font-size:11px;font-weight:'+(isActive?'600':'400')+';border:'+(isActive?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(isActive?'#eff6ff':'#fff')+';color:'+(isActive?'#1d4ed8':'#64748b')+';cursor:pointer;transition:all 0.2s;font-family:inherit">'+t.label+'</button>';
+  }).join('');
+}
+
+// ============================================================
 // MAIN RENDER FUNCTION
 // ============================================================
 function renderPreview() {
@@ -562,7 +810,15 @@ function render() {
       '</div>' +
       // RIGHT PANEL
       '<div class="panel-right">' +
-        '<div class="cv-paper" id="cvOutput">' + renderCV() + '</div>' +
+        '<div style="width:100%;max-width:210mm;margin:0 auto">' +
+          // Template Selector Dashboard
+          '<div class="tpl-selector no-print" style="margin-bottom:16px;padding:12px 16px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+            '<span style="font-size:11px;font-weight:600;color:#64748b;margin-right:4px">🎨 Template:</span>' +
+            tplSelectorBtns() +
+          '</div>' +
+          // CV Paper
+          '<div class="cv-paper" id="cvOutput">' + renderCV() + '</div>' +
+        '</div>' +
       '</div>' +
     '</div>';
 }

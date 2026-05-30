@@ -261,7 +261,8 @@ select.field-input { cursor: pointer; }
 .skill-tag button:hover { color: #ef4444; }
 
 /* ============ TEMPLATE CARDS ============ */
-.template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (min-width: 500px) { .template-grid { grid-template-columns: 1fr 1fr 1fr; } }
 .tpl-card {
   padding: 16px;
   border: 2px solid var(--border);
@@ -333,6 +334,12 @@ select.field-input { cursor: pointer; }
 .cv-bullets li { font-size: 10pt; color: #374151; margin-bottom: 2px; }
 .cv-skills-list { font-size: 10pt; color: #374151; }
 .cv-lang-row { font-size: 10pt; color: #374151; margin-bottom: 2px; }
+
+/* Template Selector Dashboard */
+.tpl-selector button:hover {
+  border-color: #93c5fd !important;
+  background: #f8fafc !important;
+}
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 900px) {
