@@ -335,6 +335,11 @@ select.field-input { cursor: pointer; }
   border-radius: 4px;
   overflow: hidden;
 }
+/* Config-driven render root (templates.js). Self-contained styling. */
+.cv-render { box-sizing: border-box; width: 100%; }
+.cv-render * { box-sizing: border-box; }
+.cv-render h1, .cv-render h2, .cv-render h3, .cv-render p, .cv-render ul { margin: 0; }
+
 .cv-preview {
   padding: 28mm 22mm;
   font-family: 'Calibri', 'Arial', sans-serif;
