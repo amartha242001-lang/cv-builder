@@ -105,12 +105,12 @@ function updateSaveIndicator() {
 // ============================================================
 var sampleData = {
   personalInfo: {
-    fullName: 'Siti Nurhaliza Putri',
+    fullName: 'Erlangga Gilang Amartha',
     jobTitle: 'Senior Auditor & Financial Analyst',
-    email: 'siti.nurhaliza@email.com',
+    email: 'erlangga.gilang@email.com',
     phone: '+62 821-9876-5432',
     location: 'Jakarta, Indonesia',
-    linkedin: 'linkedin.com/in/sitinurhaliza',
+    linkedin: 'linkedin.com/in/erlanggagilang',
     website: '',
     summary: 'Senior Auditor berpengalaman 7+ tahun di bidang audit keuangan, kepatuhan regulasi, dan analisis risiko. Terampil dalam menyusun laporan audit komprehensif, mengidentifikasi inefisiensi operasional, dan memberikan rekomendasi strategis yang menghasilkan penghematan biaya hingga 25%. Bersertifikasi CPA dan CIA dengan rekam jejak memimpin tim audit lintas departemen.'
   },
