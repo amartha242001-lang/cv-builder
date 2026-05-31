@@ -30,6 +30,50 @@ var DENSITY_PRESETS = {
 };
 
 // ============================================================
+// MULTI-LANGUAGE LABELS (preview section titles only)
+// ============================================================
+var LABELS = {
+  id: {
+    summary: 'Ringkasan Profesional', experience: 'Pengalaman Kerja', education: 'Pendidikan',
+    skills: 'Keahlian', certifications: 'Sertifikasi & Lisensi', projects: 'Proyek',
+    organizations: 'Organisasi & Kegiatan', languages: 'Bahasa', featured: 'Proyek Unggulan',
+    allProjects: 'Semua Proyek', present: 'Sekarang', viewCert: 'Lihat Sertifikat', contact: 'Kontak'
+  },
+  en: {
+    summary: 'Professional Summary', experience: 'Work Experience', education: 'Education',
+    skills: 'Skills', certifications: 'Certifications & Licenses', projects: 'Projects',
+    organizations: 'Organizations & Activities', languages: 'Languages', featured: 'Featured Projects',
+    allProjects: 'All Projects', present: 'Present', viewCert: 'View Certificate', contact: 'Contact'
+  }
+};
+
+// Lookup a preview label for the active language
+function L(key) {
+  var lang = (typeof state !== 'undefined' && state.lang) ? state.lang : 'id';
+  var dict = LABELS[lang] || LABELS.id;
+  return dict[key] || LABELS.id[key] || key;
+}
+
+// ============================================================
+// SECTION ORDER (drag-and-drop reorderable)
+// ============================================================
+var DEFAULT_SECTION_ORDER = ['summary','experience','education','skills','certifications','projects','organizations','languages'];
+
+// Friendly labels for the reorder UI (always Indonesian in the editor)
+var SECTION_UI_LABELS = {
+  summary: '📝 Ringkasan', experience: '💼 Pengalaman', education: '🎓 Pendidikan',
+  skills: '⚡ Keahlian', certifications: '📜 Sertifikasi', projects: '🚀 Proyek',
+  organizations: '🤝 Organisasi', languages: '🌍 Bahasa'
+};
+
+// Resolve current order, appending any missing keys for safety
+function getSectionOrder() {
+  var order = (typeof state !== 'undefined' && state.sectionOrder && state.sectionOrder.length) ? state.sectionOrder.slice() : DEFAULT_SECTION_ORDER.slice();
+  DEFAULT_SECTION_ORDER.forEach(function(k){ if (order.indexOf(k) === -1) order.push(k); });
+  return order;
+}
+
+// ============================================================
 // TEMPLATE CONFIGS (12 total: 2 original favorites + 10 new)
 // ============================================================
 // Properties:
@@ -174,7 +218,7 @@ function tplDocs(docs) {
 function tplCertDoc(c) {
   var url = c.docUrl || c.link || '';
   if (!url) return '';
-  return ' <a href="'+esc(url)+'" target="_blank" rel="noopener" style="font-size:var(--cv-fs-small);color:var(--cv-accent);text-decoration:none">📎 Lihat Sertifikat</a>';
+  return ' <a href="'+esc(url)+'" target="_blank" rel="noopener" style="font-size:var(--cv-fs-small);color:var(--cv-accent);text-decoration:none">📎 '+L('viewCert')+'</a>';
 }
 
 // Section header — varies by sectionStyle
@@ -245,7 +289,7 @@ function tplExpEntries(ex) {
     html += '<div style="margin-bottom:var(--cv-entry-gap)">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
         '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(e.position)+'</h3>' +
-        '<span style="font-size:var(--cv-fs-small);color:var(--cv-muted);white-space:nowrap">'+fmtDate(e.startDate)+' — '+(e.current?'Sekarang':fmtDate(e.endDate))+'</span>' +
+        '<span style="font-size:var(--cv-fs-small);color:var(--cv-muted);white-space:nowrap">'+fmtDate(e.startDate)+' — '+(e.current?L('present'):fmtDate(e.endDate))+'</span>' +
       '</div>' +
       '<div style="font-size:var(--cv-fs-small);color:var(--cv-accent);font-weight:500">'+esc(e.company)+'</div>' +
       tplBullets(e.description) + tplDocs(e.docs) +
@@ -315,7 +359,7 @@ function tplFeaturedBox(pr) {
   if (!pr || !pr.length) return '';
   var top = pr.slice(0, 3);
   var html = '<div style="background:var(--cv-accent-soft);border:1px solid var(--cv-accent);border-radius:8px;padding:12px 16px;margin-bottom:var(--cv-section-gap)">' +
-    '<div style="font-size:var(--cv-fs-h3);font-weight:700;color:var(--cv-accent);margin-bottom:6px">★ PROYEK UNGGULAN</div>';
+    '<div style="font-size:var(--cv-fs-h3);font-weight:700;color:var(--cv-accent);margin-bottom:6px">★ '+L('featured').toUpperCase()+'</div>';
   top.forEach(function(proj){
     html += '<div style="margin-bottom:4px;font-size:var(--cv-fs-body);color:var(--cv-text)"><strong>'+esc(proj.name)+'</strong>' +
       (proj.link?' — <a href="'+esc(proj.link)+'" target="_blank" rel="noopener" style="color:var(--cv-accent);text-decoration:none">'+esc(proj.link)+'</a>':'') + '</div>';
@@ -405,27 +449,35 @@ function renderSingleLayout(cfg, vars, dens) {
   // ---- FEATURED BOX (Portfolio Spotlight) ----
   if (cfg.featured) html += tplFeaturedBox(pr);
 
-  // ---- SUMMARY ----
-  if (p.summary) {
-    html += tplSectionHead('Ringkasan Profesional', cfg);
-    html += '<p style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);margin:0'+(alignCenter?';text-align:center':'')+'">'+esc(p.summary)+'</p>';
-  }
-
-  // ---- EXPERIENCE ----
-  if (ex.length) { html += tplSectionHead('Pengalaman Kerja', cfg); html += tplExpEntries(ex); }
-  // ---- EDUCATION ----
-  if (ed.length) { html += tplSectionHead('Pendidikan', cfg); html += tplEduEntries(ed); }
-  // ---- SKILLS ----
-  if (sk.length) { html += tplSectionHead('Keahlian', cfg); html += tplSkills(sk, cfg, {center: cfg.centerSkills}); }
-  // ---- CERTIFICATIONS ----
-  if (ce.length) { html += tplSectionHead('Sertifikasi & Lisensi', cfg); html += tplCertEntries(ce); }
-  // ---- PROJECTS (skip if already featured at top only when desired; show full list anyway) ----
-  if (pr.length && !cfg.featured) { html += tplSectionHead('Proyek', cfg); html += tplProjEntries(pr); }
-  else if (pr.length && cfg.featured) { html += tplSectionHead('Semua Proyek', cfg); html += tplProjEntries(pr); }
-  // ---- ORGANIZATIONS ----
-  if (og.length) { html += tplSectionHead('Organisasi & Kegiatan', cfg); html += tplOrgEntries(og); }
-  // ---- LANGUAGES ----
-  if (la.length) { html += tplSectionHead('Bahasa', cfg); html += tplLangEntries(la); }
+  // ---- SECTIONS (rendered in user-defined order) ----
+  var order = getSectionOrder();
+  order.forEach(function(key) {
+    if (key === 'summary' && p.summary) {
+      html += tplSectionHead(L('summary'), cfg);
+      html += '<p style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);margin:0'+(alignCenter?';text-align:center':'')+'">'+esc(p.summary)+'</p>';
+    }
+    else if (key === 'experience' && ex.length) {
+      html += tplSectionHead(L('experience'), cfg); html += tplExpEntries(ex);
+    }
+    else if (key === 'education' && ed.length) {
+      html += tplSectionHead(L('education'), cfg); html += tplEduEntries(ed);
+    }
+    else if (key === 'skills' && sk.length) {
+      html += tplSectionHead(L('skills'), cfg); html += tplSkills(sk, cfg, {center: cfg.centerSkills});
+    }
+    else if (key === 'certifications' && ce.length) {
+      html += tplSectionHead(L('certifications'), cfg); html += tplCertEntries(ce);
+    }
+    else if (key === 'projects' && pr.length) {
+      html += tplSectionHead(cfg.featured ? L('allProjects') : L('projects'), cfg); html += tplProjEntries(pr);
+    }
+    else if (key === 'organizations' && og.length) {
+      html += tplSectionHead(L('organizations'), cfg); html += tplOrgEntries(og);
+    }
+    else if (key === 'languages' && la.length) {
+      html += tplSectionHead(L('languages'), cfg); html += tplLangEntries(la);
+    }
+  });
 
   // ---- FOOTER CONTACT (Legal Minimalist) ----
   if (cfg.contactPos === 'footer') {
@@ -470,13 +522,13 @@ function renderSplitLayout(cfg, vars, dens) {
   if (p.linkedin) ct.push('in '+esc(p.linkedin));
   if (p.website) ct.push('◎ '+esc(p.website));
   if (ct.length) {
-    html += sideHead('Kontak');
+    html += sideHead(L('contact'));
     html += '<div style="font-size:var(--cv-fs-small);line-height:1.8">' + ct.map(function(c){return '<div>'+c+'</div>';}).join('') + '</div>';
   }
 
   // Skills as tags
   if (sk.length) {
-    html += sideHead('Keahlian');
+    html += sideHead(L('skills'));
     var tagBg = darkSidebar ? 'rgba(255,255,255,0.12)' : 'var(--cv-accent-soft)';
     var tagColor = darkSidebar ? '#fff' : 'var(--cv-accent)';
     html += '<div style="display:flex;flex-wrap:wrap;gap:4px">' +
@@ -486,7 +538,7 @@ function renderSplitLayout(cfg, vars, dens) {
 
   // Languages
   if (la.length) {
-    html += sideHead('Bahasa');
+    html += sideHead(L('languages'));
     la.forEach(function(l){
       html += '<div style="font-size:var(--cv-fs-small);margin-bottom:4px"><strong>'+esc(l.name)+'</strong> — '+esc(l.level)+'</div>';
     });
@@ -494,11 +546,11 @@ function renderSplitLayout(cfg, vars, dens) {
 
   // Certifications (sidebar)
   if (ce.length) {
-    html += sideHead('Sertifikasi');
+    html += sideHead(L('certifications'));
     ce.forEach(function(c){
       html += '<div style="font-size:var(--cv-fs-small);margin-bottom:6px"><strong>'+esc(c.name)+'</strong>' +
         (c.issuer?'<br><span style="opacity:0.8">'+esc(c.issuer)+(c.date?', '+esc(c.date):'')+'</span>':'') +
-        ((c.docUrl||c.link)?'<br><a href="'+esc(c.docUrl||c.link)+'" target="_blank" rel="noopener" style="color:'+(darkSidebar?'#93c5fd':'var(--cv-accent)')+';text-decoration:none;font-size:var(--cv-fs-small)">📎 Lihat</a>':'') +
+        ((c.docUrl||c.link)?'<br><a href="'+esc(c.docUrl||c.link)+'" target="_blank" rel="noopener" style="color:'+(darkSidebar?'#93c5fd':'var(--cv-accent)')+';text-decoration:none;font-size:var(--cv-fs-small)">📎 '+L('viewCert')+'</a>':'') +
         '</div>';
     });
   }
@@ -513,13 +565,13 @@ function renderSplitLayout(cfg, vars, dens) {
   };
 
   if (p.summary) {
-    html += mainHead('Ringkasan Profesional');
+    html += mainHead(L('summary'));
     html += '<p style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);margin:0">'+esc(p.summary)+'</p>';
   }
-  if (ex.length) { html += mainHead('Pengalaman Kerja'); html += tplExpEntries(ex); }
-  if (ed.length) { html += mainHead('Pendidikan'); html += tplEduEntries(ed); }
-  if (pr.length) { html += mainHead('Proyek'); html += tplProjEntries(pr); }
-  if (og.length) { html += mainHead('Organisasi'); html += tplOrgEntries(og); }
+  if (ex.length) { html += mainHead(L('experience')); html += tplExpEntries(ex); }
+  if (ed.length) { html += mainHead(L('education')); html += tplEduEntries(ed); }
+  if (pr.length) { html += mainHead(L('projects')); html += tplProjEntries(pr); }
+  if (og.length) { html += mainHead(L('organizations')); html += tplOrgEntries(og); }
 
   html += '</div></div>';
   return html;

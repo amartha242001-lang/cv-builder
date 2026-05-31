@@ -386,3 +386,13 @@ select.field-input { cursor: pointer; }
   .panel-right { padding: 0; }
   .cv-paper { box-shadow: none; }
 }
+
+/* ============ SECTION REORDER (SortableJS) ============ */
+.sort-ghost {
+  opacity: 0.45;
+  background: #eff6ff !important;
+  border: 1px dashed #2563eb !important;
+}
+.drag-handle:active { cursor: grabbing; }
+#sectionSortList > div { transition: box-shadow 0.15s; }
+#sectionSortList > div:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }

@@ -14,6 +14,8 @@ var state = {
   template: 'ats-clean',
   accentColor: '',   // '' = use template default; set via color palette
   density: 'normal', // compact | normal | spacious
+  lang: 'id',        // preview label language: 'id' | 'en'
+  sectionOrder: ['summary','experience','education','skills','certifications','projects','organizations','languages'],
   data: {
     personalInfo: {fullName:'',jobTitle:'',email:'',phone:'',location:'',linkedin:'',website:'',summary:''},
     experiences: [],
@@ -37,6 +39,8 @@ function loadSavedData() {
         if (parsed.template) state.template = parsed.template;
         if (parsed.accentColor !== undefined) state.accentColor = parsed.accentColor;
         if (parsed.density) state.density = parsed.density;
+        if (parsed.lang) state.lang = parsed.lang;
+        if (parsed.sectionOrder && parsed.sectionOrder.length) state.sectionOrder = parsed.sectionOrder;
         // Ensure all arrays exist (backward compatibility)
         if (!state.data.experiences) state.data.experiences = [];
         if (!state.data.education) state.data.education = [];
@@ -55,7 +59,7 @@ function loadSavedData() {
 // Save current data to localStorage
 function saveToStorage() {
   try {
-    var toSave = { data: state.data, template: state.template, accentColor: state.accentColor, density: state.density, savedAt: new Date().toISOString() };
+    var toSave = { data: state.data, template: state.template, accentColor: state.accentColor, density: state.density, lang: state.lang, sectionOrder: state.sectionOrder, savedAt: new Date().toISOString() };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   } catch(e) { /* storage full or unavailable */ }
 }
@@ -300,12 +304,20 @@ function formExperience() {
       inp('Tanggal Mulai','month',exp.startDate,"updExp("+exp.id+",'startDate',this.value)",'','') +
       '<div><label class="field-label">Tanggal Selesai</label><input class="field-input" type="month" value="'+esc(exp.endDate)+'" oninput="updExp('+exp.id+',\'endDate\',this.value)"'+(exp.current?' disabled':'')+'>'+
       '<label style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;color:#64748b;cursor:pointer"><input type="checkbox" '+(exp.current?'checked':'')+' onchange="updExp('+exp.id+',\'current\',this.checked);render()"> Masih bekerja di sini</label></div>' +
-      txta('Deskripsi Tugas & Pencapaian',exp.description,"updExp("+exp.id+",'description',this.value)",'Pisahkan setiap poin dengan Enter. Gunakan format: Kata kerja aktif + tugas + hasil terukur',4,'col-full') +
+      // Description with AI Enhancer button
+      '<div class="col-full">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">' +
+          '<label class="field-label" style="margin:0">Deskripsi Tugas & Pencapaian</label>' +
+          '<button onclick="aiEnhanceExp('+exp.id+')" title="Tingkatkan dengan AI (kata kerja aksi profesional)" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;border:1px solid #c4b5fd;background:linear-gradient(135deg,#ede9fe,#f5f3ff);color:#6d28d9;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🪄 AI Enhance</button>' +
+        '</div>' +
+        '<textarea class="field-input" data-exp-desc="'+exp.id+'" rows="4" oninput="updExp('+exp.id+',\'description\',this.value)" onfocus="rememberExpFocus('+exp.id+')" placeholder="Pisahkan setiap poin dengan Enter. Tips: klik 🪄 AI Enhance untuk mengubah jadi kalimat profesional.">'+esc(exp.description)+'</textarea>' +
+      '</div>' +
       '</div>' +
       renderDocs(exp.docs || [], 'Exp', exp.id) +
       '</div>';
   });
   html += '<button class="btn-add" onclick="addExp()">+ Tambah Pengalaman Kerja</button>';
+  html += renderVerbsDrawer();
   html += atsTip('Pengalaman Kerja', 'Mulai setiap bullet point dengan kata kerja aktif (Memimpin, Menganalisis, Mengembangkan). Sertakan angka dan metrik: "Meningkatkan efisiensi 30%" lebih kuat dari "Meningkatkan efisiensi".');
   return html;
 }
@@ -717,6 +729,10 @@ function formTemplate() {
   html += '</div>';
   html += '<div style="font-size:11px;color:#94a3b8;margin-bottom:18px">💡 Gunakan <b>Compact</b> agar CV pas dalam 1 halaman A4 penuh.</div>';
 
+  // ---- SECTION REORDER (drag & drop) ----
+  html += renderSectionReorder();
+  html += '<div style="height:18px"></div>';
+
   // ---- TEMPLATE GRID (grouped by category) ----
   html += '<div style="margin-bottom:8px;font-size:12px;font-weight:600;color:#475569">Pilih Template</div>';
   TEMPLATE_CATEGORIES.forEach(function(cat) {
@@ -838,6 +854,7 @@ function render() {
           '<span class="logo-sub">ATS-Friendly Resume Builder</span>' +
         '</div>' +
         '<div class="header-actions">' +
+          renderLangToggle() +
           '<button class="btn btn-ghost" onclick="loadSample()">📋 Contoh Data</button>' +
           '<button class="btn btn-ghost" onclick="resetData()">🗑️ Reset</button>' +
           '<button class="btn btn-ghost" id="saveBtn" onclick="saveData()">💾 Save</button>' +
@@ -881,9 +898,15 @@ function render() {
 
   // Draw page-break indicators after the DOM is painted
   if (window.requestAnimationFrame) {
-    requestAnimationFrame(updatePageBreaks);
+    requestAnimationFrame(function(){
+      updatePageBreaks();
+      if (state.section === 'template' && typeof initSectionSortable === 'function') initSectionSortable();
+    });
   } else {
-    setTimeout(updatePageBreaks, 30);
+    setTimeout(function(){
+      updatePageBreaks();
+      if (state.section === 'template' && typeof initSectionSortable === 'function') initSectionSortable();
+    }, 30);
   }
 }
 
