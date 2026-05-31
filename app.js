@@ -725,9 +725,19 @@ function formTemplate() {
     Object.keys(TEMPLATES).forEach(function(id) {
       var t = TEMPLATES[id];
       if (t.cat !== cat) return;
-      html += '<div class="tpl-card'+(state.template===id?' active':'')+'" onclick="setTemplate(\''+id+'\')">' +
-        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><div class="tpl-color" style="background:'+t.accent+'"></div><span style="font-size:15px">'+t.icon+'</span></div>' +
-        '<div class="tpl-name">'+t.name+'</div><div class="tpl-desc">'+(descs[id]||'')+'</div></div>';
+      var on = state.template === id;
+      var cardStyle = on
+        ? 'background:'+t.accent+';border:2px solid '+t.accent+';box-shadow:0 4px 12px rgba(0,0,0,0.2)'
+        : 'background:#fff;border:2px solid #e2e8f0';
+      var nameColor = on ? '#fff' : '#1e293b';
+      var descColor = on ? 'rgba(255,255,255,0.85)' : '#64748b';
+      var swatchBorder = on ? '2px solid rgba(255,255,255,0.7)' : '1px solid #fff';
+      html += '<div class="tpl-card'+(on?' active':'')+'" onclick="setTemplate(\''+id+'\')" style="'+cardStyle+'">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+          '<div style="display:flex;align-items:center;gap:8px"><div style="width:18px;height:18px;border-radius:5px;background:'+t.accent+';border:'+swatchBorder+'"></div><span style="font-size:15px">'+t.icon+'</span></div>' +
+          (on?'<span style="color:#fff;font-size:13px;font-weight:700">✓</span>':'') +
+        '</div>' +
+        '<div class="tpl-name" style="color:'+nameColor+'">'+t.name+'</div><div class="tpl-desc" style="color:'+descColor+'">'+(descs[id]||'')+'</div></div>';
     });
     html += '</div>';
   });
@@ -756,11 +766,15 @@ function renderCertDocLink(cert) {
 
 function tplSelectorBtns() {
   var html = '';
-  // Template quick-buttons
+  // Template quick-buttons — active button gets full accent bg + white text
   Object.keys(TEMPLATES).forEach(function(id) {
     var t = TEMPLATES[id];
     var isActive = state.template === id;
-    html += '<button onclick="setTemplate(\''+id+'\')" title="'+t.name+' ('+t.cat+')" style="padding:5px 10px;border-radius:8px;font-size:11px;font-weight:'+(isActive?'600':'400')+';border:'+(isActive?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(isActive?'#eff6ff':'#fff')+';color:'+(isActive?'#1d4ed8':'#64748b')+';cursor:pointer;transition:all 0.2s;font-family:inherit;white-space:nowrap">'+t.icon+' '+t.name+'</button>';
+    var activeColor = getActiveAccent();
+    var style = isActive
+      ? 'background:'+activeColor+';color:#fff;border:2px solid '+activeColor+';font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.18)'
+      : 'background:#fff;color:#64748b;border:1px solid #e2e8f0;font-weight:400';
+    html += '<button onclick="setTemplate(\''+id+'\')" title="'+t.name+' ('+t.cat+')" style="padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer;transition:all 0.2s;font-family:inherit;white-space:nowrap;'+style+'">'+t.icon+' '+t.name+(isActive?' ✓':'')+'</button>';
   });
   return html;
 }
@@ -788,6 +802,10 @@ function tplQuickControls() {
 function renderPreview() {
   var el = document.getElementById('cvOutput');
   if (el) el.innerHTML = renderCV();
+  if (typeof updatePageBreaks === 'function') {
+    if (window.requestAnimationFrame) requestAnimationFrame(updatePageBreaks);
+    else setTimeout(updatePageBreaks, 30);
+  }
   autoSave(); // Auto-save after every data change
 }
 
@@ -852,11 +870,55 @@ function render() {
               tplQuickControls() +
             '</div>' +
           '</div>' +
-          // CV Paper
-          '<div class="cv-paper" id="cvOutput">' + renderCV() + '</div>' +
+          // CV Paper with page-break overlay (overlay is sibling so it's excluded from PDF)
+          '<div class="cv-paper-wrapper" style="position:relative;width:210mm;max-width:100%;margin:0 auto">' +
+            '<div class="cv-paper" id="cvOutput">' + renderCV() + '</div>' +
+            '<div id="pageBreakOverlay" class="no-print" style="position:absolute;top:0;left:0;right:0;pointer-events:none;z-index:5"></div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
+
+  // Draw page-break indicators after the DOM is painted
+  if (window.requestAnimationFrame) {
+    requestAnimationFrame(updatePageBreaks);
+  } else {
+    setTimeout(updatePageBreaks, 30);
+  }
+}
+
+// ============================================================
+// LIVE PAGE-BREAK INDICATOR (A4 boundary lines)
+// ============================================================
+function updatePageBreaks() {
+  var paper = document.getElementById('cvOutput');
+  var overlay = document.getElementById('pageBreakOverlay');
+  if (!paper || !overlay) return;
+
+  var pxPerMm = 96 / 25.4;            // CSS reference: 96dpi
+  var pageHeightPx = 297 * pxPerMm;   // A4 height in px
+  var h = paper.scrollHeight;
+  var pages = Math.max(1, Math.ceil(h / pageHeightPx));
+
+  overlay.style.height = h + 'px';
+
+  var html = '';
+  for (var i = 1; i < pages; i++) {
+    var top = pageHeightPx * i;
+    // Dashed red line marking end of page i
+    html += '<div style="position:absolute;left:0;right:0;top:'+top+'px;border-top:1.5px dashed #ef4444;height:0"></div>';
+    // Floating label
+    html += '<div style="position:absolute;right:8px;top:'+(top+4)+'px;background:#ef4444;color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:0 0 6px 6px;font-family:Inter,sans-serif">Batas Halaman '+i+' • lewat A4</div>';
+  }
+
+  // If content fits in 1 page, show a subtle reminder line at the A4 boundary
+  if (pages === 1) {
+    html += '<div style="position:absolute;left:0;right:0;top:'+pageHeightPx+'px;border-top:1px dashed #cbd5e1;height:0"></div>' +
+            '<div style="position:absolute;right:8px;top:'+(pageHeightPx+4)+'px;background:#94a3b8;color:#fff;font-size:9px;font-weight:600;padding:2px 8px;border-radius:0 0 6px 6px;font-family:Inter,sans-serif">Batas 1 Halaman A4</div>';
+    overlay.style.height = (pageHeightPx + 30) + 'px';
+  }
+
+  overlay.innerHTML = html;
 }
 
 // ============================================================
@@ -865,6 +927,11 @@ function render() {
 // Load saved data from localStorage (if any)
 var hadSavedData = loadSavedData();
 render();
+
+// Recalculate page-break indicators on window resize
+window.addEventListener('resize', function() {
+  if (typeof updatePageBreaks === 'function') updatePageBreaks();
+});
 
 // Show indicator if data was restored
 if (hadSavedData) {
@@ -880,3 +947,4 @@ if (hadSavedData) {
     }
   }, 500);
 }
+
