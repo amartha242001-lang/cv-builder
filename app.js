@@ -18,6 +18,7 @@ var state = {
   docMode: 'cv',     // 'cv' | 'cover' (active document)
   theme: 'light',    // 'light' | 'dark' (editor chrome theme)
   showQR: false,     // show QR code (to LinkedIn/website) on CV
+  fontOverride: '',  // '' = use template default font; else overrides all layouts
   sectionOrder: ['summary','experience','education','skills','certifications','projects','awards','organizations','hobbies','references','languages'],
   coverLetter: { company:'', recipient:'', position:'', date:'', body:'', bodyAlign:'justify', sigName:'', sigEmail:'', sigPhone:'', signature:'' },
   data: {
@@ -52,6 +53,7 @@ function loadSavedData() {
         if (parsed.docMode) state.docMode = parsed.docMode;
         if (parsed.theme) state.theme = parsed.theme;
         if (parsed.showQR !== undefined) state.showQR = parsed.showQR;
+        if (parsed.fontOverride !== undefined) state.fontOverride = parsed.fontOverride;
         if (parsed.coverLetter) {
           state.coverLetter = parsed.coverLetter;
           // backward compat: ensure new fields exist
@@ -87,7 +89,7 @@ function loadSavedData() {
 // Save current data to localStorage
 function saveToStorage() {
   try {
-    var toSave = { data: state.data, template: state.template, accentColor: state.accentColor, density: state.density, lang: state.lang, sectionOrder: state.sectionOrder, docMode: state.docMode, theme: state.theme, showQR: state.showQR, coverLetter: state.coverLetter, savedAt: new Date().toISOString() };
+    var toSave = { data: state.data, template: state.template, accentColor: state.accentColor, density: state.density, lang: state.lang, sectionOrder: state.sectionOrder, docMode: state.docMode, theme: state.theme, showQR: state.showQR, fontOverride: state.fontOverride, coverLetter: state.coverLetter, savedAt: new Date().toISOString() };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   } catch(e) { /* storage full or unavailable */ }
 }
@@ -131,6 +133,29 @@ function updateSaveIndicator() {
     setTimeout(function() { if (el) el.style.opacity = '0.6'; }, 2000);
   }
 }
+
+// ============================================================
+// FONT OPTIONS (for font picker in Template tab)
+// ============================================================
+var FONT_OPTIONS = [
+  { id: '',                  label: 'Default Template',    stack: '' },
+  { id: 'Calibri',           label: 'Calibri',             stack: "Calibri, 'Gill Sans', Arial, sans-serif" },
+  { id: 'Arial',             label: 'Arial',               stack: "Arial, Helvetica, sans-serif" },
+  { id: 'Times New Roman',   label: 'Times New Roman',     stack: "'Times New Roman', Times, serif" },
+  { id: 'Georgia',           label: 'Georgia',             stack: "Georgia, 'Times New Roman', serif" },
+  { id: 'Garamond',          label: 'Garamond',            stack: "Garamond, 'EB Garamond', 'Times New Roman', serif" },
+  { id: 'EB Garamond',       label: 'EB Garamond',         stack: "'EB Garamond', Garamond, serif" },
+  { id: 'Inter',             label: 'Inter',               stack: "Inter, 'Segoe UI', Arial, sans-serif" },
+  { id: 'Lato',              label: 'Lato',                stack: "Lato, 'Helvetica Neue', Arial, sans-serif" },
+  { id: 'Roboto',            label: 'Roboto',              stack: "Roboto, 'Helvetica Neue', Arial, sans-serif" },
+  { id: 'Open Sans',         label: 'Open Sans',           stack: "'Open Sans', 'Helvetica Neue', Arial, sans-serif" },
+  { id: 'Merriweather',      label: 'Merriweather',        stack: "Merriweather, Georgia, serif" },
+  { id: 'Playfair Display',  label: 'Playfair Display',    stack: "'Playfair Display', Georgia, serif" },
+  { id: 'Source Serif 4',    label: 'Source Serif',        stack: "'Source Serif 4', Georgia, serif" },
+  { id: 'Nunito',            label: 'Nunito',              stack: "Nunito, 'Helvetica Neue', Arial, sans-serif" },
+  { id: 'Raleway',           label: 'Raleway',             stack: "Raleway, 'Helvetica Neue', Arial, sans-serif" },
+  { id: 'Montserrat',        label: 'Montserrat',          stack: "Montserrat, 'Helvetica Neue', Arial, sans-serif" }
+];
 
 // ============================================================
 // SAMPLE DATA (Akuntan / Auditor Senior)
@@ -219,6 +244,7 @@ function setTemplate(t) {
 }
 function setAccent(color) { state.accentColor = color; autoSave(); render(); }
 function setDensity(d) { state.density = d; autoSave(); render(); }
+function setFont(f) { state.fontOverride = f; autoSave(); render(); }
 function scrollTabs(amount) {
   var el = document.getElementById('tabsScroll');
   if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
@@ -983,6 +1009,17 @@ function formTemplate() {
   });
   html += '</div>';
   html += '<div style="font-size:11px;color:#94a3b8;margin-bottom:18px">💡 Gunakan <b>Compact</b> agar CV pas dalam 1 halaman A4 penuh.</div>';
+
+  // ---- FONT PICKER ----
+  html += '<div style="margin-bottom:8px;font-size:12px;font-weight:600;color:#475569">Font Dokumen</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:18px">';
+  FONT_OPTIONS.forEach(function(f) {
+    var on = state.fontOverride === f.id;
+    var previewStack = f.stack || "Calibri, Arial, sans-serif";
+    html += '<button onclick="setFont(\''+f.id.replace(/'/g,"\\'")+'\')" style="padding:8px 10px;border-radius:8px;text-align:left;font-size:13px;font-weight:'+(on?'700':'400')+';border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#1e293b')+';cursor:pointer;font-family:'+previewStack+';transition:all 0.2s">' +
+      (on?'✓ ':'')+f.label+'</button>';
+  });
+  html += '</div>';
 
   // ---- SECTION REORDER (drag & drop) ----
   html += renderSectionReorder();

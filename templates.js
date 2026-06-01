@@ -181,6 +181,23 @@ function getActiveAccent() {
   return (t && t.accent) || '#1e3a5f';
 }
 
+// Resolve the active font stack (user override > template default)
+function getActiveFont(cfg) {
+  if (typeof state !== 'undefined' && state.fontOverride) {
+    // Find the matching stack from FONT_OPTIONS (defined in app.js)
+    if (typeof FONT_OPTIONS !== 'undefined') {
+      for (var i = 0; i < FONT_OPTIONS.length; i++) {
+        if (FONT_OPTIONS[i].id === state.fontOverride) {
+          return FONT_OPTIONS[i].stack || cfg.font;
+        }
+      }
+    }
+    // Fallback: use the id as a direct font-family value
+    return "'" + state.fontOverride + "', Calibri, Arial, sans-serif";
+  }
+  return cfg.font;
+}
+
 function getDensity() {
   return DENSITY_PRESETS[state.density] || DENSITY_PRESETS.normal;
 }
@@ -449,7 +466,7 @@ function renderSingleLayout(cfg, vars, dens) {
       pr=state.data.projects, og=state.data.organizations;
 
   var pad = cfg.wideMargin ? '32mm 28mm' : '24mm 20mm';
-  var html = '<div class="cv-render" style="'+vars+'font-family:'+cfg.font+';padding:'+pad+';line-height:var(--cv-lh)">';
+  var html = '<div class="cv-render" style="'+vars+'font-family:'+getActiveFont(cfg)+';padding:'+pad+';line-height:var(--cv-lh)">';
 
   // ---- HEADER ----
   var alignCenter = cfg.headerAlign === 'center';
@@ -553,7 +570,7 @@ function renderSplitLayout(cfg, vars, dens) {
 
   var sb = cfg.sidebar;
   var darkSidebar = sb.text && sb.text !== '#44403c';
-  var html = '<div class="cv-render" style="'+vars+'font-family:'+cfg.font+';display:flex;min-height:297mm;line-height:var(--cv-lh)">';
+  var html = '<div class="cv-render" style="'+vars+'font-family:'+getActiveFont(cfg)+';display:flex;min-height:297mm;line-height:var(--cv-lh)">';
 
   // ===== SIDEBAR =====
   html += '<div style="width:'+sb.width+'%;background:'+sb.bg+';color:'+sb.text+';padding:24px 18px">';
@@ -682,7 +699,7 @@ function renderCoverLetter(cfg, vars, dens) {
     ? { regard:'Sincerely,', re:'Re: Application for', to:'To' }
     : { regard:'Hormat saya,', re:'Perihal: Lamaran untuk posisi', to:'Kepada Yth.' };
 
-  var html = '<div class="cv-render" style="'+vars+'font-family:'+cfg.font+';padding:26mm 24mm;line-height:var(--cv-lh)">';
+  var html = '<div class="cv-render" style="'+vars+'font-family:'+getActiveFont(cfg)+';padding:26mm 24mm;line-height:var(--cv-lh)">';
 
   // Letterhead (synced from CV personal info) — only show border if there's content
   var contact = [];
