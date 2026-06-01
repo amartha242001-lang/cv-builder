@@ -1103,7 +1103,7 @@ function tplSelectorBtns() {
   return html;
 }
 
-// Quick color + density swatches for the preview dashboard
+// Quick color + density swatches + Desain button for the preview dashboard
 function tplQuickControls() {
   var html = '<span style="font-size:11px;font-weight:600;color:#64748b;margin-left:8px;margin-right:2px">Warna:</span>';
   var activeAccent = getActiveAccent();
@@ -1117,6 +1117,9 @@ function tplQuickControls() {
     var labelShort = d === 'compact' ? 'S' : d === 'normal' ? 'M' : 'L';
     html += '<button onclick="setDensity(\''+d+'\')" title="'+DENSITY_PRESETS[d].label+'" style="width:24px;height:24px;border-radius:6px;font-size:11px;font-weight:600;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer;margin:0 1px">'+labelShort+'</button>';
   });
+  // 🎨 Desain button — opens the Design/Template tab in the left panel
+  var desainOn = state.section === 'template';
+  html += '<button onclick="setSection(\'template\')" title="Desain & Template" style="margin-left:10px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;border:'+(desainOn?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(desainOn?'#eff6ff':'#fff')+';color:'+(desainOn?'#1d4ed8':'#64748b')+';cursor:pointer;font-family:inherit">🎨 Desain</button>';
   return html;
 }
 
@@ -1169,18 +1172,10 @@ function render() {
     tabsHtml = '<button class="tab-btn active" style="cursor:default">✉️ Surat Lamaran</button>' +
       '<button class="tab-btn" onclick="switchDocument(\'cv\')">↩ Kembali ke CV</button>';
   } else {
-    tabsHtml = tabs.map(function(t) {
+    // Remove "Desain" from tabs — it moves to the preview dashboard
+    tabsHtml = tabs.filter(function(t){ return t.id !== 'template'; }).map(function(t) {
       return '<button class="tab-btn'+(state.section===t.id?' active':'')+'" onclick="setSection(\''+t.id+'\')">'+t.icon+' '+t.label+'</button>';
     }).join('');
-    // "⋯ Lainnya" dropdown button
-    tabsHtml += '<div style="position:relative;display:inline-block">' +
-      '<button class="tab-btn'+(secondaryActive?' active':'')+'" onclick="toggleMoreTabs()" id="moreTabsBtn">⋯ Lainnya</button>' +
-      '<div id="moreTabsMenu" style="display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:200;min-width:140px;padding:4px">' +
-        secondaryTabs.map(function(t){
-          return '<button class="tab-btn'+(state.section===t.id?' active':'')+'" onclick="setSection(\''+t.id+'\');closeMoreTabs()" style="display:block;width:100%;text-align:left;border-radius:8px">'+t.icon+' '+t.label+'</button>';
-        }).join('') +
-      '</div>' +
-    '</div>';
   }
 
   document.getElementById('app').innerHTML =
@@ -1202,6 +1197,16 @@ function render() {
           '<div class="doc-switch" style="display:inline-flex;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;padding:3px;gap:2px">' +
             '<button onclick="switchDocument(\'cv\')" style="padding:6px 12px;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;'+(state.docMode==='cv'?'background:#1e3a5f;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.2)':'background:transparent;color:#64748b')+'">📄 CV</button>' +
             '<button onclick="switchDocument(\'cover\')" style="padding:6px 12px;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;'+(state.docMode==='cover'?'background:#1e3a5f;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.2)':'background:transparent;color:#64748b')+'">✉️ Cover Letter</button>' +
+          '</div>' +
+          // "⋯ Lainnya" dropdown in header — between Cover Letter and Download PDF
+          '<div style="position:relative;display:inline-block">' +
+            '<button class="btn btn-ghost'+(secondaryActive?' active':'')+'" onclick="toggleMoreTabs()" id="moreTabsBtn" style="'+(secondaryActive?'background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe':'')+'">⋯ Lainnya</button>' +
+            '<div id="moreTabsMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:200;min-width:160px;padding:6px">' +
+              secondaryTabs.map(function(t){
+                var on = state.section === t.id;
+                return '<button onclick="setSection(\''+t.id+'\');closeMoreTabs()" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;border-radius:8px;font-size:12px;font-weight:'+(on?'600':'400')+';background:'+(on?'#eff6ff':'transparent')+';color:'+(on?'#1d4ed8':'#374151')+';cursor:pointer;font-family:inherit;text-align:left">'+t.icon+' '+t.label+'</button>';
+              }).join('') +
+            '</div>' +
           '</div>' +
           '<span id="saveIndicator" style="font-size:10px;color:#94a3b8;transition:opacity 0.3s;opacity:0.6"></span>' +
           '<button class="btn btn-primary" onclick="exportPDF()">📥 Download PDF</button>' +
