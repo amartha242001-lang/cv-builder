@@ -684,17 +684,20 @@ function renderCoverLetter(cfg, vars, dens) {
 
   var html = '<div class="cv-render" style="'+vars+'font-family:'+cfg.font+';padding:26mm 24mm;line-height:var(--cv-lh)">';
 
-  // Letterhead (synced from CV personal info)
-  html += '<div style="border-bottom:2px solid var(--cv-accent);padding-bottom:12px;margin-bottom:18px">';
-  if (p.fullName) html += '<h1 style="font-size:20pt;font-weight:700;margin:0;color:'+bodyTextColor(cfg)+'">'+esc(p.fullName)+'</h1>';
-  if (p.jobTitle) html += '<div style="font-size:var(--cv-fs-h2);color:var(--cv-accent);font-weight:600;margin-top:2px">'+esc(p.jobTitle)+'</div>';
+  // Letterhead (synced from CV personal info) — only show border if there's content
   var contact = [];
   if (p.email) contact.push(esc(p.email));
   if (p.phone) contact.push(esc(p.phone));
   if (p.location) contact.push(esc(p.location));
   if (p.linkedin) contact.push(esc(p.linkedin));
-  if (contact.length) html += '<div style="font-size:var(--cv-fs-small);color:var(--cv-muted);margin-top:6px">'+contact.join(' &nbsp;|&nbsp; ')+'</div>';
-  html += '</div>';
+  var hasLetterhead = !!(p.fullName || p.jobTitle || contact.length);
+  if (hasLetterhead) {
+    html += '<div style="border-bottom:2px solid var(--cv-accent);padding-bottom:12px;margin-bottom:18px">';
+    if (p.fullName) html += '<h1 style="font-size:20pt;font-weight:700;margin:0;color:'+bodyTextColor(cfg)+'">'+esc(p.fullName)+'</h1>';
+    if (p.jobTitle) html += '<div style="font-size:var(--cv-fs-h2);color:var(--cv-accent);font-weight:600;margin-top:2px">'+esc(p.jobTitle)+'</div>';
+    if (contact.length) html += '<div style="font-size:var(--cv-fs-small);color:var(--cv-muted);margin-top:6px">'+contact.join(' &nbsp;|&nbsp; ')+'</div>';
+    html += '</div>';
+  }
 
   // Date
   html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);text-align:right;margin-bottom:16px">'+esc(dateStr)+'</div>';
