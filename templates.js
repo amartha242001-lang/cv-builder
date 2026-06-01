@@ -716,22 +716,34 @@ function renderCoverLetter(cfg, vars, dens) {
 
   // Body — paragraphs split on blank lines
   var body = c.body || '';
+  var bodyAlign = c.bodyAlign || 'justify';
   var paras = body.split(/\n\s*\n/);
-  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:justify">';
+  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:'+bodyAlign+'">';
   paras.forEach(function(par){
     if (!par.trim()) return;
-    // single newlines inside a paragraph -> <br>
     html += '<p style="margin:0 0 12px 0">'+esc(par).replace(/\n/g,'<br>')+'</p>';
   });
   html += '</div>';
 
-  // Signature
-  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-top:24px">' +
-    '<div>'+T.regard+'</div>' +
-    '<div style="height:36px"></div>' +
-    (p.fullName?'<div style="font-weight:700">'+esc(p.fullName)+'</div>':'') +
-    (p.jobTitle?'<div style="color:var(--cv-muted);font-size:var(--cv-fs-small)">'+esc(p.jobTitle)+'</div>':'') +
-  '</div>';
+  // Signature block — right-aligned like the PDF sample
+  var sigName  = (c.sigName  && c.sigName.trim())  ? c.sigName  : (p.fullName  || '');
+  var sigEmail = (c.sigEmail && c.sigEmail.trim()) ? c.sigEmail : (p.email     || '');
+  var sigPhone = (c.sigPhone && c.sigPhone.trim()) ? c.sigPhone : (p.phone     || '');
+
+  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-top:24px;text-align:right">' +
+    '<div>'+T.regard+'</div>';
+
+  // Signature image (if uploaded)
+  if (c.signature) {
+    html += '<div style="margin:8px 0"><img src="'+c.signature+'" alt="Tanda Tangan" style="height:64px;max-width:180px;object-fit:contain"></div>';
+  } else {
+    html += '<div style="height:48px"></div>';
+  }
+
+  if (sigName)  html += '<div style="font-weight:700">'+esc(sigName)+'</div>';
+  if (sigEmail) html += '<div style="font-size:var(--cv-fs-small);color:var(--cv-muted)">'+esc(sigEmail)+'</div>';
+  if (sigPhone) html += '<div style="font-size:var(--cv-fs-small);color:var(--cv-muted)">'+esc(sigPhone)+'</div>';
+  html += '</div>';
 
   html += '</div>';
   return html;
