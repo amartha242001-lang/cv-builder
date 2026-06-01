@@ -235,7 +235,23 @@ function fmtDate(d) {
 // ============================================================
 // ACTIONS
 // ============================================================
-function setSection(s) { state.section = s; render(); }
+function setSection(s) { state.section = s; closeMoreTabs(); render(); }
+function toggleMoreTabs() {
+  var m = document.getElementById('moreTabsMenu');
+  if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
+}
+function closeMoreTabs() {
+  var m = document.getElementById('moreTabsMenu');
+  if (m) m.style.display = 'none';
+}
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  var btn = document.getElementById('moreTabsBtn');
+  var menu = document.getElementById('moreTabsMenu');
+  if (menu && btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+    menu.style.display = 'none';
+  }
+});
 function setTemplate(t) {
   state.template = t;
   state.accentColor = ''; // reset to new template's default accent
@@ -1117,26 +1133,37 @@ function renderPreview() {
   autoSave(); // Auto-save after every data change
 }
 
+// Save tab scroll position before re-render, restore after
+var _tabScrollPos = 0;
+
 function render() {
+  // Save current scroll position before rebuilding DOM
+  var oldScroll = document.getElementById('tabsScroll');
+  if (oldScroll) _tabScrollPos = oldScroll.scrollLeft;
+
   var tabs = [
-    {id:'personal', icon:'👤', label:'Pribadi'},
-    {id:'experience', icon:'💼', label:'Pengalaman'},
-    {id:'education', icon:'🎓', label:'Pendidikan'},
-    {id:'skills', icon:'⚡', label:'Keahlian'},
-    {id:'languages', icon:'🌍', label:'Bahasa'},
+    {id:'personal',       icon:'👤', label:'Pribadi'},
+    {id:'experience',     icon:'💼', label:'Pengalaman'},
+    {id:'education',      icon:'🎓', label:'Pendidikan'},
+    {id:'skills',         icon:'⚡', label:'Keahlian'},
+    {id:'languages',      icon:'🌍', label:'Bahasa'},
     {id:'certifications', icon:'📜', label:'Sertifikasi'},
-    {id:'projects', icon:'🚀', label:'Proyek'},
-    {id:'organizations', icon:'🤝', label:'Organisasi'},
-    {id:'awards', icon:'🏆', label:'Penghargaan'},
-    {id:'hobbies', icon:'🎯', label:'Hobi'},
-    {id:'references', icon:'🔗', label:'Referensi'},
-    {id:'jobmatch', icon:'🎯', label:'Job Match'},
-    {id:'import', icon:'📂', label:'Import CV'},
-    {id:'review', icon:'✅', label:'Review'},
-    {id:'template', icon:'🎨', label:'Template'}
+    {id:'projects',       icon:'🚀', label:'Proyek'},
+    {id:'organizations',  icon:'🤝', label:'Organisasi'},
+    {id:'awards',         icon:'🏆', label:'Penghargaan'},
+    {id:'hobbies',        icon:'🎯', label:'Hobi'},
+    {id:'references',     icon:'🔗', label:'Referensi'},
+    {id:'template',       icon:'🎨', label:'Desain'}
   ];
 
-  // In Cover Letter mode, hide CV section tabs (only show the cover form)
+  // Secondary tabs shown in "⋯ Lainnya" dropdown
+  var secondaryTabs = [
+    {id:'jobmatch', icon:'🎯', label:'Job Match'},
+    {id:'import',   icon:'📂', label:'Import CV'},
+    {id:'review',   icon:'✅', label:'Review'}
+  ];
+  var secondaryActive = secondaryTabs.some(function(t){ return t.id === state.section; });
+
   var tabsHtml;
   if (state.docMode === 'cover') {
     tabsHtml = '<button class="tab-btn active" style="cursor:default">✉️ Surat Lamaran</button>' +
@@ -1145,6 +1172,15 @@ function render() {
     tabsHtml = tabs.map(function(t) {
       return '<button class="tab-btn'+(state.section===t.id?' active':'')+'" onclick="setSection(\''+t.id+'\')">'+t.icon+' '+t.label+'</button>';
     }).join('');
+    // "⋯ Lainnya" dropdown button
+    tabsHtml += '<div style="position:relative;display:inline-block">' +
+      '<button class="tab-btn'+(secondaryActive?' active':'')+'" onclick="toggleMoreTabs()" id="moreTabsBtn">⋯ Lainnya</button>' +
+      '<div id="moreTabsMenu" style="display:none;position:absolute;top:100%;left:0;background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:200;min-width:140px;padding:4px">' +
+        secondaryTabs.map(function(t){
+          return '<button class="tab-btn'+(state.section===t.id?' active':'')+'" onclick="setSection(\''+t.id+'\');closeMoreTabs()" style="display:block;width:100%;text-align:left;border-radius:8px">'+t.icon+' '+t.label+'</button>';
+        }).join('') +
+      '</div>' +
+    '</div>';
   }
 
   document.getElementById('app').innerHTML =
@@ -1205,16 +1241,30 @@ function render() {
       '</div>' +
     '</div>';
 
-  // Draw page-break indicators after the DOM is painted
+  // Draw page-break indicators + restore tab scroll position after DOM is painted
   if (window.requestAnimationFrame) {
     requestAnimationFrame(function(){
       updatePageBreaks();
       if (state.section === 'template' && typeof initSectionSortable === 'function') initSectionSortable();
+      // Restore tab scroll position so active tab stays in view
+      var sc = document.getElementById('tabsScroll');
+      if (sc) {
+        sc.scrollLeft = _tabScrollPos;
+        // Also scroll active tab into view if it's not visible
+        var activeBtn = sc.querySelector('.tab-btn.active');
+        if (activeBtn) activeBtn.scrollIntoView({block:'nearest', inline:'nearest'});
+      }
     });
   } else {
     setTimeout(function(){
       updatePageBreaks();
       if (state.section === 'template' && typeof initSectionSortable === 'function') initSectionSortable();
+      var sc = document.getElementById('tabsScroll');
+      if (sc) {
+        sc.scrollLeft = _tabScrollPos;
+        var activeBtn = sc.querySelector('.tab-btn.active');
+        if (activeBtn) activeBtn.scrollIntoView({block:'nearest', inline:'nearest'});
+      }
     }, 30);
   }
 }
