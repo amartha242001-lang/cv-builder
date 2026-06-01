@@ -730,14 +730,14 @@ function renderCoverLetter(cfg, vars, dens) {
   var sigEmail = (c.sigEmail && c.sigEmail.trim()) ? c.sigEmail : (p.email     || '');
   var sigPhone = (c.sigPhone && c.sigPhone.trim()) ? c.sigPhone : (p.phone     || '');
 
-  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-top:24px;text-align:right">' +
-    '<div>'+T.regard+'</div>';
+  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-top:28px;text-align:right">' +
+    '<div style="margin-bottom:12px">'+T.regard+'</div>';
 
-  // Signature image (if uploaded)
+  // Signature image sits between "Hormat saya" and the name
   if (c.signature) {
-    html += '<div style="margin:8px 0"><img src="'+c.signature+'" alt="Tanda Tangan" style="height:64px;max-width:180px;object-fit:contain"></div>';
+    html += '<div style="margin-bottom:4px"><img src="'+c.signature+'" alt="Tanda Tangan" style="height:64px;max-width:180px;object-fit:contain;display:inline-block"></div>';
   } else {
-    html += '<div style="height:48px"></div>';
+    html += '<div style="height:52px"></div>';
   }
 
   if (sigName)  html += '<div style="font-weight:700">'+esc(sigName)+'</div>';
