@@ -15,16 +15,24 @@ var state = {
   accentColor: '',   // '' = use template default; set via color palette
   density: 'normal', // compact | normal | spacious
   lang: 'id',        // preview label language: 'id' | 'en'
-  sectionOrder: ['summary','experience','education','skills','certifications','projects','organizations','languages'],
+  docMode: 'cv',     // 'cv' | 'cover' (active document)
+  theme: 'light',    // 'light' | 'dark' (editor chrome theme)
+  showQR: false,     // show QR code (to LinkedIn/website) on CV
+  sectionOrder: ['summary','experience','education','skills','certifications','projects','awards','organizations','hobbies','references','languages'],
+  coverLetter: { company:'', recipient:'', position:'', date:'', body:'' },
   data: {
     personalInfo: {fullName:'',jobTitle:'',email:'',phone:'',location:'',linkedin:'',website:'',summary:''},
+    photo: '',          // base64 data URL of profile photo
     experiences: [],
     education: [],
     skills: [],
     languages: [],
     certifications: [],
     projects: [],
-    organizations: []
+    organizations: [],
+    awards: [],         // {name, issuer, year}
+    hobbies: [],         // array of strings
+    references: []       // {name, position, company, contact}
   }
 };
 
@@ -41,6 +49,10 @@ function loadSavedData() {
         if (parsed.density) state.density = parsed.density;
         if (parsed.lang) state.lang = parsed.lang;
         if (parsed.sectionOrder && parsed.sectionOrder.length) state.sectionOrder = parsed.sectionOrder;
+        if (parsed.docMode) state.docMode = parsed.docMode;
+        if (parsed.theme) state.theme = parsed.theme;
+        if (parsed.showQR !== undefined) state.showQR = parsed.showQR;
+        if (parsed.coverLetter) state.coverLetter = parsed.coverLetter;
         // Ensure all arrays exist (backward compatibility)
         if (!state.data.experiences) state.data.experiences = [];
         if (!state.data.education) state.data.education = [];
@@ -49,6 +61,14 @@ function loadSavedData() {
         if (!state.data.certifications) state.data.certifications = [];
         if (!state.data.projects) state.data.projects = [];
         if (!state.data.organizations) state.data.organizations = [];
+        if (!state.data.awards) state.data.awards = [];
+        if (!state.data.hobbies) state.data.hobbies = [];
+        if (!state.data.references) state.data.references = [];
+        if (state.data.photo === undefined) state.data.photo = '';
+        // Ensure new sections appear in order list
+        ['awards','hobbies','references'].forEach(function(k){
+          if (state.sectionOrder.indexOf(k) === -1) state.sectionOrder.push(k);
+        });
         return true;
       }
     }
@@ -59,7 +79,7 @@ function loadSavedData() {
 // Save current data to localStorage
 function saveToStorage() {
   try {
-    var toSave = { data: state.data, template: state.template, accentColor: state.accentColor, density: state.density, lang: state.lang, sectionOrder: state.sectionOrder, savedAt: new Date().toISOString() };
+    var toSave = { data: state.data, template: state.template, accentColor: state.accentColor, density: state.density, lang: state.lang, sectionOrder: state.sectionOrder, docMode: state.docMode, theme: state.theme, showQR: state.showQR, coverLetter: state.coverLetter, savedAt: new Date().toISOString() };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   } catch(e) { /* storage full or unavailable */ }
 }
@@ -146,7 +166,25 @@ var sampleData = {
   organizations: [
     {id:1, name:'Ikatan Akuntan Indonesia (IAI)', role:'Anggota Komite Muda', description:'Berkontribusi dalam penyusunan panduan praktik audit untuk UMKM.'},
     {id:2, name:'Indonesia Internal Audit Association', role:'Volunteer Trainer', description:'Memberikan pelatihan audit berbasis risiko untuk 50+ peserta dari berbagai industri.'}
+  ],
+  awards: [
+    {id:1, name:'Best Auditor of the Year', issuer:'Deloitte Indonesia', year:'2023'},
+    {id:2, name:'Employee Excellence Award', issuer:'PwC Indonesia', year:'2020'}
+  ],
+  hobbies: ['Membaca buku finansial', 'Lari maraton', 'Catur', 'Fotografi'],
+  references: [
+    {id:1, name:'Budi Santoso, CPA', position:'Audit Partner', company:'Deloitte Indonesia', contact:'budi.santoso@deloitte.com'},
+    {id:2, name:'Linda Wijaya', position:'Finance Director', company:'PT Maju Bersama', contact:'+62 811-2233-4455'}
   ]
+};
+
+// Sample cover letter (Senior Auditor)
+var sampleCoverLetter = {
+  company: 'PT Bank Negara Indonesia (Persero) Tbk',
+  recipient: 'Ibu Sarah Wijayanti, HR Manager',
+  position: 'Senior Internal Auditor',
+  date: '',
+  body: 'Dengan hormat,\n\nMelalui surat ini, saya bermaksud mengajukan lamaran untuk posisi Senior Internal Auditor yang sedang dibuka di perusahaan Bapak/Ibu. Dengan pengalaman lebih dari 7 tahun di bidang audit keuangan dan kepatuhan regulasi di firma audit terkemuka seperti Deloitte dan PwC, saya yakin dapat memberikan kontribusi signifikan bagi tim audit internal Anda.\n\nSepanjang karier saya, saya telah memimpin tim audit untuk klien korporasi besar, mengidentifikasi temuan material yang berdampak pada keputusan strategis, serta mengimplementasikan sistem audit berbasis data analytics yang meningkatkan efisiensi hingga 35%. Sertifikasi CPA dan CIA yang saya miliki, dikombinasikan dengan pemahaman mendalam tentang standar PSAK dan regulasi OJK, membuat saya siap menghadapi tantangan di posisi ini.\n\nSaya sangat tertarik untuk bergabung dan berkontribusi pada penguatan tata kelola dan manajemen risiko di perusahaan Anda. Saya berharap mendapat kesempatan untuk menjelaskan lebih lanjut kualifikasi saya dalam sesi wawancara.\n\nAtas perhatian dan pertimbangan Bapak/Ibu, saya ucapkan terima kasih.'
 };
 
 // ============================================================
@@ -177,10 +215,20 @@ function scrollTabs(amount) {
   var el = document.getElementById('tabsScroll');
   if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
 }
-function loadSample() { state.data = JSON.parse(JSON.stringify(sampleData)); autoSave(); render(); }
+function loadSample() {
+  if (state.docMode === 'cover') {
+    state.coverLetter = JSON.parse(JSON.stringify(sampleCoverLetter));
+    // also ensure personal info exists for the letterhead
+    if (!state.data.personalInfo.fullName) state.data.personalInfo = JSON.parse(JSON.stringify(sampleData.personalInfo));
+  } else {
+    state.data = JSON.parse(JSON.stringify(sampleData));
+  }
+  autoSave(); render();
+}
 function resetData() {
   if (confirm('Yakin ingin menghapus semua data? Tindakan ini tidak bisa dibatalkan.')) {
-    state.data = {personalInfo:{fullName:'',jobTitle:'',email:'',phone:'',location:'',linkedin:'',website:'',summary:''},experiences:[],education:[],skills:[],languages:[],certifications:[],projects:[],organizations:[]};
+    state.data = {personalInfo:{fullName:'',jobTitle:'',email:'',phone:'',location:'',linkedin:'',website:'',summary:''},photo:'',experiences:[],education:[],skills:[],languages:[],certifications:[],projects:[],organizations:[],awards:[],hobbies:[],references:[]};
+    state.coverLetter = { company:'', recipient:'', position:'', date:'', body:'' };
     saveToStorage();
     render();
   }
@@ -236,13 +284,69 @@ function addOrgDoc(id) { var e=state.data.organizations.find(function(x){return 
 function updOrgDoc(id,i,f,v) { var e=state.data.organizations.find(function(x){return x.id==id;}); if(e&&e.docs&&e.docs[i]){e.docs[i][f]=v;renderPreview();} }
 function rmOrgDoc(id,i) { var e=state.data.organizations.find(function(x){return x.id==id;}); if(e&&e.docs){e.docs.splice(i,1);autoSave();render();} }
 
-// PDF Export
+// Awards
+function addAward() { state.data.awards.push({id:gid(),name:'',issuer:'',year:''}); autoSave(); render(); }
+function updAward(id,f,v) { var e=state.data.awards.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
+function rmAward(id) { state.data.awards=state.data.awards.filter(function(x){return x.id!=id;}); autoSave(); render(); }
+
+// Hobbies (array of strings)
+function addHobby() { var inp=document.getElementById('hobbyInp'); var v=inp?inp.value.trim():''; if(v&&state.data.hobbies.indexOf(v)===-1){state.data.hobbies.push(v);autoSave();render();} }
+function rmHobby(i) { state.data.hobbies.splice(i,1); autoSave(); render(); }
+function hobbyKey(e) { if(e.key==='Enter'){e.preventDefault();addHobby();} }
+
+// References
+function addRef() { state.data.references.push({id:gid(),name:'',position:'',company:'',contact:''}); autoSave(); render(); }
+function updRef(id,f,v) { var e=state.data.references.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
+function rmRef(id) { state.data.references=state.data.references.filter(function(x){return x.id!=id;}); autoSave(); render(); }
+
+// Profile Photo
+function updatePhoto(input) {
+  var file = input.files[0];
+  if (!file) return;
+  if (!file.type.match(/^image\//)) { alert('File harus berupa gambar (JPG/PNG).'); return; }
+  if (file.size > 3 * 1024 * 1024) { alert('Ukuran foto maksimal 3MB.'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e) { state.data.photo = e.target.result; autoSave(); render(); };
+  reader.readAsDataURL(file);
+}
+function removePhoto() { state.data.photo = ''; autoSave(); render(); }
+
+// Cover letter
+function updCover(f,v) { state.coverLetter[f]=v; renderPreview(); }
+
+// Document mode toggle (CV <-> Cover Letter)
+function switchDocument(mode) {
+  state.docMode = mode;
+  // When switching to cover, jump to its form; when back to CV, restore a CV tab
+  if (mode === 'cover') { state.section = 'cover'; }
+  else if (state.section === 'cover') { state.section = 'personal'; }
+  autoSave();
+  render();
+}
+
+// Theme toggle (editor chrome dark mode)
+function toggleTheme() {
+  state.theme = (state.theme === 'dark') ? 'light' : 'dark';
+  applyTheme();
+  autoSave();
+}
+function applyTheme() {
+  if (state.theme === 'dark') document.body.classList.add('dark-mode');
+  else document.body.classList.remove('dark-mode');
+}
+
+// QR code toggle
+function toggleQR() { state.showQR = !state.showQR; autoSave(); render(); }
+
+// PDF Export — works for both CV and Cover Letter (exports #cvOutput)
 function exportPDF() {
   var el = document.getElementById('cvOutput');
   if (!el) return;
+  var name = state.data.personalInfo.fullName || 'document';
+  var prefix = state.docMode === 'cover' ? 'CoverLetter_' : 'CV_';
   html2pdf().set({
     margin: 0,
-    filename: 'CV_' + (state.data.personalInfo.fullName || 'document') + '.pdf',
+    filename: prefix + name + '.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, letterRendering: true },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -255,6 +359,8 @@ function exportPDF() {
 // ============================================================
 function renderForm() {
   var s = state.section;
+  // Cover Letter mode shows only the cover form
+  if (state.docMode === 'cover') return formCover();
   if (s === 'personal') return formPersonal();
   if (s === 'experience') return formExperience();
   if (s === 'education') return formEducation();
@@ -263,6 +369,10 @@ function renderForm() {
   if (s === 'certifications') return formCertifications();
   if (s === 'projects') return formProjects();
   if (s === 'organizations') return formOrganizations();
+  if (s === 'awards') return formAwards();
+  if (s === 'hobbies') return formHobbies();
+  if (s === 'references') return formReferences();
+  if (s === 'jobmatch') return formJobMatch();
   if (s === 'import') return formImport();
   if (s === 'review') return formReview();
   if (s === 'template') return formTemplate();
@@ -280,7 +390,23 @@ function txta(label, val, handler, ph, rows, cls) {
 
 function formPersonal() {
   var p = state.data.personalInfo;
+  var photo = state.data.photo;
+  var photoBlock = '<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px">' +
+    (photo
+      ? '<img src="'+photo+'" alt="Foto" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0">'
+      : '<div style="width:64px;height:64px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:24px;color:#94a3b8">👤</div>') +
+    '<div style="flex:1">' +
+      '<div style="font-size:12px;font-weight:600;color:#1e293b;margin-bottom:2px">📸 Foto Profil</div>' +
+      '<div style="font-size:11px;color:#94a3b8;margin-bottom:8px">Tampil di template 2-kolom (Sidebar/Ivory). Maks 3MB.</div>' +
+      '<div style="display:flex;gap:6px">' +
+        '<label style="padding:6px 12px;background:#2563eb;color:#fff;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">📁 '+(photo?'Ganti':'Upload')+' Foto<input type="file" accept="image/*" onchange="updatePhoto(this)" style="display:none"></label>' +
+        (photo?'<button onclick="removePhoto()" style="padding:6px 12px;background:#fee2e2;color:#b91c1c;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">Hapus</button>':'') +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
   return '<div class="section-title">👤 Data Pribadi</div>' +
+    photoBlock +
     '<div class="form-grid">' +
     inp('Nama Lengkap','text',p.fullName,"updateP('fullName',this.value)",'Nama lengkap sesuai KTP','col-full') +
     inp('Jabatan / Posisi Target','text',p.jobTitle,"updateP('jobTitle',this.value)",'Contoh: Senior Auditor','col-full') +
@@ -291,6 +417,7 @@ function formPersonal() {
     inp('Website / Portfolio','text',p.website,"updateP('website',this.value)",'www.website.com (opsional)','col-full') +
     txta('Ringkasan Profesional',p.summary,"updateP('summary',this.value)",'Tuliskan 2-4 kalimat yang merangkum pengalaman, keahlian utama, dan value proposition Anda...',4,'col-full') +
     '</div>' +
+    '<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:#475569;cursor:pointer"><input type="checkbox" '+(state.showQR?'checked':'')+' onchange="toggleQR()"> 📱 Tampilkan QR Code (ke LinkedIn/Website) di CV</label>' +
     atsTip('Ringkasan Profil', 'Gunakan kata kunci dari lowongan yang dituju. Sebutkan tahun pengalaman, keahlian utama, dan pencapaian terukur. Hindari kata subjektif seperti "pekerja keras" — ganti dengan bukti konkret.');
 }
 
@@ -415,6 +542,81 @@ function formOrganizations() {
       '</div>';
   });
   html += '<button class="btn-add" onclick="addOrg()">+ Tambah Organisasi</button>';
+  return html;
+}
+
+function formAwards() {
+  var html = '<div class="section-title">🏆 Penghargaan</div>';
+  state.data.awards.forEach(function(a) {
+    html += '<div class="entry-card"><button class="btn-remove" onclick="rmAward('+a.id+')">&times;</button>' +
+      '<div class="form-grid">' +
+      inp('Nama Penghargaan','text',a.name,"updAward("+a.id+",'name',this.value)",'Contoh: Best Employee of the Year','col-full') +
+      inp('Pemberi','text',a.issuer,"updAward("+a.id+",'issuer',this.value)",'Nama lembaga/perusahaan','') +
+      inp('Tahun','text',a.year,"updAward("+a.id+",'year',this.value)",'2023','') +
+      '</div></div>';
+  });
+  html += '<button class="btn-add" onclick="addAward()">+ Tambah Penghargaan</button>';
+  html += atsTip('Penghargaan', 'Penghargaan menunjukkan prestasi terukur. Sebutkan nama resmi penghargaan dan pemberinya agar kredibel di mata recruiter.');
+  return html;
+}
+
+function formHobbies() {
+  var html = '<div class="section-title">🎯 Hobi & Minat</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:12px"><input class="field-input" id="hobbyInp" placeholder="Ketik hobi lalu tekan Enter..." onkeydown="hobbyKey(event)" style="flex:1"><button class="btn btn-accent" onclick="addHobby()">Tambah</button></div>' +
+    '<div class="skills-wrap">';
+  state.data.hobbies.forEach(function(h, i) {
+    html += '<span class="skill-tag">' + esc(h) + '<button onclick="rmHobby('+i+')">&times;</button></span>';
+  });
+  html += '</div>';
+  html += atsTip('Hobi & Minat', 'Cantumkan hobi yang relevan atau menunjukkan soft skill (misal: lari maraton = disiplin, catur = analitis). Opsional, gunakan jika masih ada ruang di CV.');
+  return html;
+}
+
+function formReferences() {
+  var html = '<div class="section-title">🔗 Referensi</div>';
+  state.data.references.forEach(function(r) {
+    html += '<div class="entry-card"><button class="btn-remove" onclick="rmRef('+r.id+')">&times;</button>' +
+      '<div class="form-grid">' +
+      inp('Nama','text',r.name,"updRef("+r.id+",'name',this.value)",'Nama lengkap referensi','col-full') +
+      inp('Jabatan','text',r.position,"updRef("+r.id+",'position',this.value)",'Jabatan referensi','') +
+      inp('Perusahaan','text',r.company,"updRef("+r.id+",'company',this.value)",'Nama perusahaan','') +
+      inp('Kontak','text',r.contact,"updRef("+r.id+",'contact',this.value)",'Email / nomor telepon','col-full') +
+      '</div></div>';
+  });
+  html += '<button class="btn-add" onclick="addRef()">+ Tambah Referensi</button>';
+  html += atsTip('Referensi', 'Pastikan Anda sudah meminta izin kepada orang yang dijadikan referensi. Boleh juga ditulis "Tersedia atas permintaan" untuk menghemat ruang.');
+  return html;
+}
+
+function formCover() {
+  var c = state.coverLetter;
+  var p = state.data.personalInfo;
+  var syncInfo = '<div style="padding:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;margin-bottom:14px;font-size:11px;color:#1e40af">' +
+    '<strong>🔄 Data otomatis dari CV:</strong><br>' +
+    (p.fullName?esc(p.fullName):'<i>(Nama belum diisi di tab Data Pribadi)</i>') +
+    (p.email?' • '+esc(p.email):'') + (p.phone?' • '+esc(p.phone):'') +
+    '<br><span style="color:#64748b">Nama, email, telepon & LinkedIn ditarik otomatis dari CV — tidak perlu input ulang.</span>' +
+  '</div>';
+
+  return '<div class="section-title">✉️ Surat Lamaran Kerja</div>' +
+    syncInfo +
+    '<div class="form-grid">' +
+    inp('Perusahaan Tujuan','text',c.company,"updCover('company',this.value)",'Contoh: PT Bank Negara Indonesia','col-full') +
+    inp('Nama Penerima / HRD','text',c.recipient,"updCover('recipient',this.value)",'Contoh: Ibu Sarah, HR Manager','col-full') +
+    inp('Posisi yang Dilamar','text',c.position,"updCover('position',this.value)",'Contoh: Senior Internal Auditor','') +
+    inp('Tanggal Surat','text',c.date,"updCover('date',this.value)",'Kosongkan = tanggal hari ini','') +
+    txta('Isi Surat Lamaran',c.body,"updCover('body',this.value)",'Tuliskan isi surat lamaran Anda. Pisahkan paragraf dengan Enter dua kali...',12,'col-full') +
+    '</div>' +
+    atsTip('Surat Lamaran', 'Buat singkat (maksimal 1 halaman, 3-4 paragraf). Sebutkan posisi yang dilamar, kualifikasi utama yang relevan, dan alasan tertarik pada perusahaan. Klik "📋 Contoh Data" untuk draf otomatis.');
+}
+
+function formJobMatch() {
+  var html = '<div class="section-title">🎯 Job Description Matcher</div>' +
+    '<p style="font-size:12px;color:#64748b;margin-bottom:14px;line-height:1.6">Paste deskripsi lowongan kerja di bawah, lalu sistem akan membandingkan kata kunci penting dengan isi CV Anda untuk memperkirakan kecocokan ATS.</p>' +
+    '<textarea class="field-input" id="jdInput" rows="8" placeholder="Paste seluruh teks lowongan kerja (job description) di sini..."></textarea>' +
+    '<button class="btn btn-accent" style="width:100%;margin-top:10px" onclick="runJobMatch()">🔍 Analisis Kecocokan</button>' +
+    '<div id="jobMatchResult" style="margin-top:14px"></div>' +
+    atsTip('Job Matcher', 'Masukkan kata kunci yang muncul di hasil "belum ada" ke dalam Skill, Ringkasan, atau Pengalaman Anda (jika memang relevan & jujur) untuk meningkatkan kecocokan dengan filter ATS.');
   return html;
 }
 
@@ -835,14 +1037,25 @@ function render() {
     {id:'certifications', icon:'📜', label:'Sertifikasi'},
     {id:'projects', icon:'🚀', label:'Proyek'},
     {id:'organizations', icon:'🤝', label:'Organisasi'},
+    {id:'awards', icon:'🏆', label:'Penghargaan'},
+    {id:'hobbies', icon:'🎯', label:'Hobi'},
+    {id:'references', icon:'🔗', label:'Referensi'},
+    {id:'jobmatch', icon:'🎯', label:'Job Match'},
     {id:'import', icon:'📂', label:'Import CV'},
     {id:'review', icon:'✅', label:'Review'},
     {id:'template', icon:'🎨', label:'Template'}
   ];
 
-  var tabsHtml = tabs.map(function(t) {
-    return '<button class="tab-btn'+(state.section===t.id?' active':'')+'" onclick="setSection(\''+t.id+'\')">'+t.icon+' '+t.label+'</button>';
-  }).join('');
+  // In Cover Letter mode, hide CV section tabs (only show the cover form)
+  var tabsHtml;
+  if (state.docMode === 'cover') {
+    tabsHtml = '<button class="tab-btn active" style="cursor:default">✉️ Surat Lamaran</button>' +
+      '<button class="tab-btn" onclick="switchDocument(\'cv\')">↩ Kembali ke CV</button>';
+  } else {
+    tabsHtml = tabs.map(function(t) {
+      return '<button class="tab-btn'+(state.section===t.id?' active':'')+'" onclick="setSection(\''+t.id+'\')">'+t.icon+' '+t.label+'</button>';
+    }).join('');
+  }
 
   document.getElementById('app').innerHTML =
     // HEADER
@@ -855,9 +1068,15 @@ function render() {
         '</div>' +
         '<div class="header-actions">' +
           renderLangToggle() +
+          '<button class="btn btn-ghost" onclick="toggleTheme()" title="Mode Gelap/Terang">'+(state.theme==='dark'?'☀️':'🌙')+'</button>' +
           '<button class="btn btn-ghost" onclick="loadSample()">📋 Contoh Data</button>' +
           '<button class="btn btn-ghost" onclick="resetData()">🗑️ Reset</button>' +
           '<button class="btn btn-ghost" id="saveBtn" onclick="saveData()">💾 Save</button>' +
+          // Document switcher (CV / Cover Letter) — centered between Save and Download
+          '<div class="doc-switch" style="display:inline-flex;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;padding:3px;gap:2px">' +
+            '<button onclick="switchDocument(\'cv\')" style="padding:6px 12px;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;'+(state.docMode==='cv'?'background:#1e3a5f;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.2)':'background:transparent;color:#64748b')+'">📄 CV</button>' +
+            '<button onclick="switchDocument(\'cover\')" style="padding:6px 12px;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;'+(state.docMode==='cover'?'background:#1e3a5f;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.2)':'background:transparent;color:#64748b')+'">✉️ Cover Letter</button>' +
+          '</div>' +
           '<span id="saveIndicator" style="font-size:10px;color:#94a3b8;transition:opacity 0.3s;opacity:0.6"></span>' +
           '<button class="btn btn-primary" onclick="exportPDF()">📥 Download PDF</button>' +
         '</div>' +
@@ -949,6 +1168,7 @@ function updatePageBreaks() {
 // ============================================================
 // Load saved data from localStorage (if any)
 var hadSavedData = loadSavedData();
+applyTheme();
 render();
 
 // Recalculate page-break indicators on window resize

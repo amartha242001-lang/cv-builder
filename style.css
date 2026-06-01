@@ -396,3 +396,63 @@ select.field-input { cursor: pointer; }
 .drag-handle:active { cursor: grabbing; }
 #sectionSortList > div { transition: box-shadow 0.15s; }
 #sectionSortList > div:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+/* ============ DARK MODE (editor chrome only, not the CV paper) ============ */
+body.dark-mode {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+body.dark-mode .header {
+  background: #1e293b;
+  border-bottom-color: #334155;
+}
+body.dark-mode .logo-text { color: #f1f5f9; }
+body.dark-mode .logo-sub { color: #94a3b8; }
+body.dark-mode .btn-ghost {
+  background: #334155;
+  color: #cbd5e1;
+  border-color: #475569;
+}
+body.dark-mode .btn-ghost:hover { background: #475569; color: #f1f5f9; }
+body.dark-mode .panel-left {
+  background: #1e293b;
+  border-right-color: #334155;
+}
+body.dark-mode .tabs-wrapper { border-bottom-color: #334155; }
+body.dark-mode .tab-scroll-btn {
+  background: #334155;
+  border-color: #475569;
+  color: #cbd5e1;
+}
+body.dark-mode .tab-btn { color: #94a3b8; }
+body.dark-mode .tab-btn:hover { background: #334155; color: #f1f5f9; }
+body.dark-mode .tab-btn.active { background: rgba(59,130,246,0.2); color: #93c5fd; }
+body.dark-mode .section-title { color: #f1f5f9; }
+body.dark-mode .field-label { color: #94a3b8; }
+body.dark-mode .field-input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+body.dark-mode .field-input::placeholder { color: #64748b; }
+body.dark-mode .field-input:focus { border-color: #3b82f6; }
+body.dark-mode .entry-card {
+  background: #0f172a;
+  border-color: #334155;
+}
+body.dark-mode .btn-add {
+  border-color: #475569;
+  color: #94a3b8;
+}
+body.dark-mode .panel-right { background: #0b1220; }
+body.dark-mode .tpl-selector { background: #1e293b; }
+body.dark-mode .ats-tip {
+  background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(124,58,237,0.12));
+  border-color: rgba(59,130,246,0.3);
+  color: #cbd5e1;
+}
+/* The CV paper always stays light (print fidelity) */
+body.dark-mode .cv-paper { background: #fff; }
+
+/* ============ DOC SWITCH (CV / Cover Letter) ============ */
+.doc-switch button:hover { opacity: 0.92; }

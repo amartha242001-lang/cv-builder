@@ -37,13 +37,15 @@ var LABELS = {
     summary: 'Ringkasan Profesional', experience: 'Pengalaman Kerja', education: 'Pendidikan',
     skills: 'Keahlian', certifications: 'Sertifikasi & Lisensi', projects: 'Proyek',
     organizations: 'Organisasi & Kegiatan', languages: 'Bahasa', featured: 'Proyek Unggulan',
-    allProjects: 'Semua Proyek', present: 'Sekarang', viewCert: 'Lihat Sertifikat', contact: 'Kontak'
+    allProjects: 'Semua Proyek', present: 'Sekarang', viewCert: 'Lihat Sertifikat', contact: 'Kontak',
+    awards: 'Penghargaan', hobbies: 'Hobi & Minat', references: 'Referensi'
   },
   en: {
     summary: 'Professional Summary', experience: 'Work Experience', education: 'Education',
     skills: 'Skills', certifications: 'Certifications & Licenses', projects: 'Projects',
     organizations: 'Organizations & Activities', languages: 'Languages', featured: 'Featured Projects',
-    allProjects: 'All Projects', present: 'Present', viewCert: 'View Certificate', contact: 'Contact'
+    allProjects: 'All Projects', present: 'Present', viewCert: 'View Certificate', contact: 'Contact',
+    awards: 'Awards', hobbies: 'Hobbies & Interests', references: 'References'
   }
 };
 
@@ -57,13 +59,14 @@ function L(key) {
 // ============================================================
 // SECTION ORDER (drag-and-drop reorderable)
 // ============================================================
-var DEFAULT_SECTION_ORDER = ['summary','experience','education','skills','certifications','projects','organizations','languages'];
+var DEFAULT_SECTION_ORDER = ['summary','experience','education','skills','certifications','projects','awards','organizations','hobbies','references','languages'];
 
 // Friendly labels for the reorder UI (always Indonesian in the editor)
 var SECTION_UI_LABELS = {
   summary: '📝 Ringkasan', experience: '💼 Pengalaman', education: '🎓 Pendidikan',
   skills: '⚡ Keahlian', certifications: '📜 Sertifikasi', projects: '🚀 Proyek',
-  organizations: '🤝 Organisasi', languages: '🌍 Bahasa'
+  organizations: '🤝 Organisasi', languages: '🌍 Bahasa',
+  awards: '🏆 Penghargaan', hobbies: '🎯 Hobi', references: '🔗 Referensi'
 };
 
 // Resolve current order, appending any missing keys for safety
@@ -354,6 +357,27 @@ function tplLangEntries(la) {
   }).join('');
 }
 
+function tplAwardEntries(aw) {
+  return aw.map(function(a){
+    return '<div style="margin-bottom:5px;font-size:var(--cv-fs-body)"><strong>'+esc(a.name)+'</strong>' +
+      (a.issuer?' — '+esc(a.issuer):'') + (a.year?' ('+esc(a.year)+')':'') + '</div>';
+  }).join('');
+}
+
+function tplHobbyEntries(hb) {
+  return '<div style="font-size:var(--cv-fs-body);color:var(--cv-text)">' + hb.map(esc).join(' &nbsp;&bull;&nbsp; ') + '</div>';
+}
+
+function tplRefEntries(rf) {
+  return rf.map(function(r){
+    return '<div style="margin-bottom:var(--cv-entry-gap)">' +
+      '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(r.name)+'</h3>' +
+      '<div style="font-size:var(--cv-fs-small);color:var(--cv-muted)">'+esc(r.position)+(r.company?', '+esc(r.company):'')+'</div>' +
+      (r.contact?'<div style="font-size:var(--cv-fs-small);color:var(--cv-accent)">'+esc(r.contact)+'</div>':'') +
+    '</div>';
+  }).join('');
+}
+
 // Featured projects box (Portfolio Spotlight)
 function tplFeaturedBox(pr) {
   if (!pr || !pr.length) return '';
@@ -390,6 +414,11 @@ function renderCV() {
     '--cv-lh:'+dens.lineHeight+';' +
     '--cv-section-gap:'+dens.sectionGap+'px;' +
     '--cv-entry-gap:'+dens.entryGap+'px;';
+
+  // Cover Letter document mode — uses same accent/density vars
+  if (typeof state.docMode !== 'undefined' && state.docMode === 'cover') {
+    return renderCoverLetter(cfg, vars, dens);
+  }
 
   if (cfg.layout === 'split') {
     return renderSplitLayout(cfg, vars, dens);
@@ -431,6 +460,21 @@ function renderSingleLayout(cfg, vars, dens) {
                      cfg.headerStyle === 'bar' ? '' : '';
 
   html += '<div style="margin-bottom:var(--cv-section-gap);'+(alignCenter?'text-align:center;':'')+headerBorder+'">';
+  // Optional profile photo (single-column): show as a circle aligned with name
+  var photoSingle = '';
+  if (state.data.photo && !alignCenter) {
+    photoSingle = '<img src="'+state.data.photo+'" alt="" style="width:78px;height:78px;border-radius:50%;object-fit:cover;border:2px solid var(--cv-accent);float:right;margin-left:14px">';
+  } else if (state.data.photo && alignCenter) {
+    photoSingle = '<img src="'+state.data.photo+'" alt="" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:2px solid var(--cv-accent);display:block;margin:0 auto 8px">';
+  }
+  // QR code (single-column): float opposite the photo
+  var qrSingle = '';
+  if (state.showQR && typeof getQRUrl === 'function') {
+    var qurl = getQRUrl(80);
+    if (qurl) qrSingle = '<img src="'+qurl+'" alt="QR" style="width:64px;height:64px;float:right;margin-left:14px;border:1px solid #e5e7eb;border-radius:6px">';
+  }
+  if (alignCenter && photoSingle) html += photoSingle;
+  if (!alignCenter) html += qrSingle + photoSingle;
   if (cfg.headerStyle === 'bar') {
     html += '<div style="background:var(--cv-accent);color:#fff;padding:14px 18px;border-radius:6px;margin-bottom:8px">';
     html += '<h1 style="font-size:'+nameSize+';font-weight:800;margin:0;color:#fff;'+hf+'">'+nameText+'</h1>';
@@ -444,6 +488,7 @@ function renderSingleLayout(cfg, vars, dens) {
   if (cfg.contactPos !== 'footer') {
     html += '<div style="margin-top:6px">' + tplContact(p, cfg, {center:alignCenter}) + '</div>';
   }
+  html += '<div style="clear:both"></div>';
   html += '</div>';
 
   // ---- FEATURED BOX (Portfolio Spotlight) ----
@@ -473,6 +518,15 @@ function renderSingleLayout(cfg, vars, dens) {
     }
     else if (key === 'organizations' && og.length) {
       html += tplSectionHead(L('organizations'), cfg); html += tplOrgEntries(og);
+    }
+    else if (key === 'awards' && (state.data.awards && state.data.awards.length)) {
+      html += tplSectionHead(L('awards'), cfg); html += tplAwardEntries(state.data.awards);
+    }
+    else if (key === 'hobbies' && (state.data.hobbies && state.data.hobbies.length)) {
+      html += tplSectionHead(L('hobbies'), cfg); html += tplHobbyEntries(state.data.hobbies);
+    }
+    else if (key === 'references' && (state.data.references && state.data.references.length)) {
+      html += tplSectionHead(L('references'), cfg); html += tplRefEntries(state.data.references);
     }
     else if (key === 'languages' && la.length) {
       html += tplSectionHead(L('languages'), cfg); html += tplLangEntries(la);
@@ -506,6 +560,9 @@ function renderSplitLayout(cfg, vars, dens) {
 
   // Name block
   html += '<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:2px solid '+(darkSidebar?'rgba(255,255,255,0.3)':'var(--cv-accent)')+'">';
+  if (state.data.photo) {
+    html += '<img src="'+state.data.photo+'" alt="" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid '+(darkSidebar?'rgba(255,255,255,0.4)':'var(--cv-accent)')+';display:block;margin:0 auto 10px">';
+  }
   html += '<h1 style="font-size:17pt;font-weight:700;margin:0;color:'+(darkSidebar?'#fff':bodyTextColor(cfg))+'">'+(p.fullName||'Nama Anda')+'</h1>';
   if (p.jobTitle) html += '<div style="font-size:10.5pt;color:'+(darkSidebar?'rgba(255,255,255,0.85)':'var(--cv-accent)')+';font-weight:500;margin-top:4px">'+esc(p.jobTitle)+'</div>';
   html += '</div>';
@@ -555,6 +612,29 @@ function renderSplitLayout(cfg, vars, dens) {
     });
   }
 
+  // Awards (sidebar)
+  if (state.data.awards && state.data.awards.length) {
+    html += sideHead(L('awards'));
+    state.data.awards.forEach(function(a){
+      html += '<div style="font-size:var(--cv-fs-small);margin-bottom:5px"><strong>'+esc(a.name)+'</strong>'+(a.year?' ('+esc(a.year)+')':'')+(a.issuer?'<br><span style="opacity:0.8">'+esc(a.issuer)+'</span>':'')+'</div>';
+    });
+  }
+
+  // Hobbies (sidebar)
+  if (state.data.hobbies && state.data.hobbies.length) {
+    html += sideHead(L('hobbies'));
+    html += '<div style="font-size:var(--cv-fs-small);line-height:1.7">'+state.data.hobbies.map(esc).join(', ')+'</div>';
+  }
+
+  // QR code (sidebar)
+  if (state.showQR && typeof getQRUrl === 'function') {
+    var qurlS = getQRUrl(100);
+    if (qurlS) {
+      html += sideHead('Scan');
+      html += '<img src="'+qurlS+'" alt="QR" style="width:80px;height:80px;border-radius:6px;background:#fff;padding:4px">';
+    }
+  }
+
   html += '</div>'; // end sidebar
 
   // ===== MAIN =====
@@ -572,7 +652,84 @@ function renderSplitLayout(cfg, vars, dens) {
   if (ed.length) { html += mainHead(L('education')); html += tplEduEntries(ed); }
   if (pr.length) { html += mainHead(L('projects')); html += tplProjEntries(pr); }
   if (og.length) { html += mainHead(L('organizations')); html += tplOrgEntries(og); }
+  if (state.data.references && state.data.references.length) { html += mainHead(L('references')); html += tplRefEntries(state.data.references); }
 
   html += '</div></div>';
+  return html;
+}
+
+// ============================================================
+// COVER LETTER RENDERER (formal business letter, A4)
+// ============================================================
+function renderCoverLetter(cfg, vars, dens) {
+  var p = state.data.personalInfo;
+  var c = state.coverLetter || {};
+  var lang = (typeof state !== 'undefined' && state.lang) ? state.lang : 'id';
+
+  // Today's date in chosen language
+  function todayStr() {
+    var d = new Date();
+    if (lang === 'en') {
+      var mEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      return mEn[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+    }
+    var mId = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    return d.getDate() + ' ' + mId[d.getMonth()] + ' ' + d.getFullYear();
+  }
+  var dateStr = c.date && c.date.trim() ? c.date : todayStr();
+
+  var T = lang === 'en'
+    ? { regard:'Sincerely,', re:'Re: Application for', to:'To' }
+    : { regard:'Hormat saya,', re:'Perihal: Lamaran untuk posisi', to:'Kepada Yth.' };
+
+  var html = '<div class="cv-render" style="'+vars+'font-family:'+cfg.font+';padding:26mm 24mm;line-height:var(--cv-lh)">';
+
+  // Letterhead (synced from CV personal info)
+  html += '<div style="border-bottom:2px solid var(--cv-accent);padding-bottom:12px;margin-bottom:18px">';
+  html += '<h1 style="font-size:20pt;font-weight:700;margin:0;color:'+bodyTextColor(cfg)+'">'+esc(p.fullName||'Nama Anda')+'</h1>';
+  if (p.jobTitle) html += '<div style="font-size:var(--cv-fs-h2);color:var(--cv-accent);font-weight:600;margin-top:2px">'+esc(p.jobTitle)+'</div>';
+  var contact = [];
+  if (p.email) contact.push(esc(p.email));
+  if (p.phone) contact.push(esc(p.phone));
+  if (p.location) contact.push(esc(p.location));
+  if (p.linkedin) contact.push(esc(p.linkedin));
+  if (contact.length) html += '<div style="font-size:var(--cv-fs-small);color:var(--cv-muted);margin-top:6px">'+contact.join(' &nbsp;|&nbsp; ')+'</div>';
+  html += '</div>';
+
+  // Date
+  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);text-align:right;margin-bottom:16px">'+esc(dateStr)+'</div>';
+
+  // Recipient block
+  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-bottom:16px">';
+  html += '<div>'+T.to+'</div>';
+  if (c.recipient) html += '<div><strong>'+esc(c.recipient)+'</strong></div>';
+  if (c.company) html += '<div><strong>'+esc(c.company)+'</strong></div>';
+  html += '</div>';
+
+  // Subject line
+  if (c.position) {
+    html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);font-weight:600;margin-bottom:16px;text-decoration:underline">'+T.re+' '+esc(c.position)+'</div>';
+  }
+
+  // Body — paragraphs split on blank lines
+  var body = c.body || '';
+  var paras = body.split(/\n\s*\n/);
+  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:justify">';
+  paras.forEach(function(par){
+    if (!par.trim()) return;
+    // single newlines inside a paragraph -> <br>
+    html += '<p style="margin:0 0 12px 0">'+esc(par).replace(/\n/g,'<br>')+'</p>';
+  });
+  html += '</div>';
+
+  // Signature
+  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-top:24px">' +
+    '<div>'+T.regard+'</div>' +
+    '<div style="height:36px"></div>' +
+    '<div style="font-weight:700">'+esc(p.fullName||'Nama Anda')+'</div>' +
+    (p.jobTitle?'<div style="color:var(--cv-muted);font-size:var(--cv-fs-small)">'+esc(p.jobTitle)+'</div>':'') +
+  '</div>';
+
+  html += '</div>';
   return html;
 }
