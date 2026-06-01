@@ -686,7 +686,7 @@ function renderCoverLetter(cfg, vars, dens) {
 
   // Letterhead (synced from CV personal info)
   html += '<div style="border-bottom:2px solid var(--cv-accent);padding-bottom:12px;margin-bottom:18px">';
-  html += '<h1 style="font-size:20pt;font-weight:700;margin:0;color:'+bodyTextColor(cfg)+'">'+esc(p.fullName||'Nama Anda')+'</h1>';
+  if (p.fullName) html += '<h1 style="font-size:20pt;font-weight:700;margin:0;color:'+bodyTextColor(cfg)+'">'+esc(p.fullName)+'</h1>';
   if (p.jobTitle) html += '<div style="font-size:var(--cv-fs-h2);color:var(--cv-accent);font-weight:600;margin-top:2px">'+esc(p.jobTitle)+'</div>';
   var contact = [];
   if (p.email) contact.push(esc(p.email));
@@ -726,7 +726,7 @@ function renderCoverLetter(cfg, vars, dens) {
   html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-top:24px">' +
     '<div>'+T.regard+'</div>' +
     '<div style="height:36px"></div>' +
-    '<div style="font-weight:700">'+esc(p.fullName||'Nama Anda')+'</div>' +
+    (p.fullName?'<div style="font-weight:700">'+esc(p.fullName)+'</div>':'') +
     (p.jobTitle?'<div style="color:var(--cv-muted);font-size:var(--cv-fs-small)">'+esc(p.jobTitle)+'</div>':'') +
   '</div>';
 
