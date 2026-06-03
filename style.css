@@ -41,10 +41,13 @@ body {
 .header-inner {
   max-width: 1600px;
   margin: 0 auto;
-  padding: 14px 24px;
+  padding: 10px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 57px;
+  height: 57px;
+  overflow: hidden;
 }
 .logo {
   display: flex;
@@ -62,6 +65,21 @@ body {
 .logo-sub { font-size: 11px; color: var(--text-muted); margin-left: 8px; }
 
 .header-actions { display: flex; align-items: center; gap: 8px; }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.header-actions .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
 
 /* ============ BUTTONS ============ */
 .btn {

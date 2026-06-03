@@ -760,6 +760,16 @@ function renderSplitLayout(cfg, vars, dens) {
 // COVER LETTER RENDERER (formal business letter, A4)
 // ============================================================
 function renderCoverLetter(cfg, vars, dens) {
+  // Cover letter uses a NEUTRAL style — ignore template-specific flags
+  // Only inherit accent color, density vars, and user font override
+  var neutralCfg = {
+    font: getActiveFont({font: "Calibri, Arial, sans-serif"}),
+    nameUpper: false,
+    bigName: false,
+    headerStyle: 'plain',
+    forceBlack: false,
+    charcoal: false
+  };
   var p = state.data.personalInfo;
   var c = state.coverLetter || {};
   var lang = (typeof state !== 'undefined' && state.lang) ? state.lang : 'id';
@@ -780,7 +790,7 @@ function renderCoverLetter(cfg, vars, dens) {
     ? { regard:'Sincerely,', re:'Re: Application for', to:'To' }
     : { regard:'Hormat saya,', re:'Perihal: Lamaran untuk posisi', to:'Kepada Yth.' };
 
-  var html = '<div class="cv-render" style="'+vars+'font-family:'+getActiveFont(cfg)+';padding:26mm 24mm;line-height:var(--cv-lh)">';
+  var html = '<div class="cv-render" style="'+vars+'font-family:'+neutralCfg.font+';padding:26mm 24mm;line-height:var(--cv-lh)">';
 
   // Letterhead (synced from CV personal info) — only show border if there's content
   var contact = [];
@@ -790,10 +800,10 @@ function renderCoverLetter(cfg, vars, dens) {
   if (p.linkedin) contact.push(esc(p.linkedin));
   var hasLetterhead = !!(p.fullName || p.jobTitle || contact.length);
   if (hasLetterhead) {
-    html += '<div style="border-bottom:2px solid var(--cv-accent);padding-bottom:12px;margin-bottom:18px">';
-    if (p.fullName) html += '<h1 style="font-size:20pt;font-weight:700;margin:0;color:'+bodyTextColor(cfg)+'">'+esc(p.fullName)+'</h1>';
-    if (p.jobTitle) html += '<div style="font-size:var(--cv-fs-h2);color:var(--cv-accent);font-weight:600;margin-top:2px">'+esc(p.jobTitle)+'</div>';
-    if (contact.length) html += '<div style="font-size:var(--cv-fs-small);color:var(--cv-muted);margin-top:6px">'+contact.join(' &nbsp;|&nbsp; ')+'</div>';
+    html += '<div style="border-bottom:1px solid #d1d5db;padding-bottom:10px;margin-bottom:18px">';
+    if (p.fullName) html += '<h1 style="font-size:16pt;font-weight:700;margin:0;color:#1a1a1a;font-family:'+neutralCfg.font+'">'+esc(p.fullName)+'</h1>';
+    if (p.jobTitle) html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-accent);font-weight:500;margin-top:2px">'+esc(p.jobTitle)+'</div>';
+    if (contact.length) html += '<div style="font-size:var(--cv-fs-small);color:#6b7280;margin-top:5px">'+contact.join(' &nbsp;|&nbsp; ')+'</div>';
     html += '</div>';
   }
 

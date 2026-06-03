@@ -1378,9 +1378,9 @@ function render() {
       '<div class="panel-right">' +
         '<div style="width:100%;max-width:210mm;margin:0 auto">' +
           // Template Selector Dashboard
-          '<div class="tpl-selector no-print" style="margin-bottom:12px;padding:12px 16px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">' +
-            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px">' +
-              '<span style="font-size:11px;font-weight:600;color:#64748b;margin-right:2px">🎨 Template:</span>' +
+          '<div class="tpl-selector no-print" style="margin-bottom:12px;padding:10px 14px;background:#fff;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);overflow-x:auto">' +
+            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow-x:auto;margin-bottom:8px;padding-bottom:4px">' +
+              '<span style="font-size:11px;font-weight:600;color:#64748b;white-space:nowrap;margin-right:2px">🎨</span>' +
               tplSelectorBtns() +
             '</div>' +
             '<div style="display:flex;align-items:center;flex-wrap:wrap;padding-top:8px;border-top:1px solid #f1f5f9">' +
