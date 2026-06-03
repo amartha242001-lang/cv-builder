@@ -550,6 +550,31 @@ function richTxta(label, val, handler, alignHandler, listHandler, textAlign, lis
   '</div>';
 }
 
+// Insert font size marker around selected text (or at cursor)
+// Uses [sz=N]text[/sz] markers, rendered by applyInlineFormat in templates.js
+function insertFontSize(size) {
+  if (!size) return;
+  var ta = _lastFocusedTA;
+  if (!ta || !ta.parentNode) {
+    ta = document.activeElement;
+    if (!ta || ta.tagName !== 'TEXTAREA') {
+      if (typeof toast === 'function') toast('Klik dulu pada kotak teks yang ingin diformat.');
+      return;
+    }
+  }
+  var start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+  var end   = ta.selectionEnd   != null ? ta.selectionEnd   : ta.value.length;
+  var sel = ta.value.substring(start, end);
+  var openTag  = '[sz='+size+']';
+  var closeTag = '[/sz]';
+  var replacement = sel ? openTag + sel + closeTag : openTag + closeTag;
+  ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
+  var newPos = sel ? start + replacement.length : start + openTag.length;
+  ta.setSelectionRange(newPos, newPos);
+  ta.focus();
+  ta.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
 // Insert text formatting marker into a textarea (Bold, Italic, Underline)
 // Uses markdown-style markers: **bold**, _italic_, __underline__
 function insertFormat(marker) {
@@ -1294,6 +1319,12 @@ function tplQuickControls() {
   html += '<button onclick="insertFormat(\'**\')" title="Bold (pilih teks dulu di kotak kiri, lalu klik)" style="width:26px;height:26px;border-radius:6px;font-size:13px;font-weight:900;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;vertical-align:middle"><b>B</b></button>';
   html += '<button onclick="insertFormat(\'_\')" title="Italic" style="width:26px;height:26px;border-radius:6px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;font-style:italic;vertical-align:middle"><i>I</i></button>';
   html += '<button onclick="insertFormat(\'__\')" title="Underline" style="width:26px;height:26px;border-radius:6px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;text-decoration:underline;vertical-align:middle"><u>U</u></button>';
+  // Font size picker — between B/I/U and Desain
+  html += '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px;display:inline-block;vertical-align:middle"></span>';
+  html += '<select onchange="insertFontSize(this.value);this.value=\'\'" title="Ukuran Font — pilih teks di kotak kiri lalu pilih ukuran" style="height:26px;padding:0 2px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#374151;background:#fff;cursor:pointer;vertical-align:middle;min-width:54px">' +
+    '<option value="" disabled selected style="color:#94a3b8">A&#8597;</option>' +
+    [8,9,10,11,12,14,16,18,20,22,24,26,28,32,36,48].map(function(s){ return '<option value="'+s+'">'+s+'pt</option>'; }).join('') +
+    '</select>';
   // 🎨 Desain button
   var desainOn = state.section === 'template';
   html += '<button onclick="setSection(\'template\')" title="Desain & Template" style="margin-left:8px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;border:'+(desainOn?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(desainOn?'#eff6ff':'#fff')+';color:'+(desainOn?'#1d4ed8':'#64748b')+';cursor:pointer;font-family:inherit;vertical-align:middle">🎨 Desain</button>';

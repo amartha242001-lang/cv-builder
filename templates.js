@@ -221,8 +221,12 @@ function mutedColor(cfg) {
 // Apply inline markdown-style formatting: **bold**, _italic_, __underline__
 function applyInlineFormat(text) {
   if (!text) return '';
-  // Must escape first, then apply formatting on escaped text
+  // Escape HTML first, then apply formatting markers
   var s = esc(text);
+  // Font size: [sz=N]text[/sz]  →  <span style="font-size:Npt">text</span>
+  s = s.replace(/\[sz=(\d+(?:\.\d+)?)\]([\s\S]*?)\[\/sz\]/g, function(m, size, content) {
+    return '<span style="font-size:'+size+'pt">'+content+'</span>';
+  });
   // Bold: **text**
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   // Underline: __text__
