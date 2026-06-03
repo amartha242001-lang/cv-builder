@@ -285,11 +285,11 @@ function resetData() {
 }
 
 // Personal
-function updateP(field, val) { state.data.personalInfo[field] = val; renderPreview(); }
+function updateP(field, val) { state.data.personalInfo[field] = val; if(field==='textAlign'||field==='listType'){autoSave();render();}else{renderPreview();} }
 
 // Experience
 function addExp() { state.data.experiences.push({id:gid(),company:'',position:'',startDate:'',endDate:'',current:false,description:'',docs:[]}); autoSave(); render(); }
-function updExp(id,f,v) { var e=state.data.experiences.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
+function updExp(id,f,v) { var e=state.data.experiences.find(function(x){return x.id==id;}); if(e){e[f]=v; if(f==='textAlign'||f==='listType'){autoSave();render();}else{renderPreview();}} }
 function rmExp(id) { state.data.experiences=state.data.experiences.filter(function(x){return x.id!=id;}); autoSave(); render(); }
 function addExpDoc(id) { var e=state.data.experiences.find(function(x){return x.id==id;}); if(e){if(!e.docs)e.docs=[];e.docs.push({name:'',url:''});render();} }
 function updExpDoc(id,i,f,v) { var e=state.data.experiences.find(function(x){return x.id==id;}); if(e&&e.docs&&e.docs[i]){e.docs[i][f]=v;renderPreview();} }
@@ -297,7 +297,7 @@ function rmExpDoc(id,i) { var e=state.data.experiences.find(function(x){return x
 
 // Education
 function addEdu() { state.data.education.push({id:gid(),institution:'',degree:'',startDate:'',endDate:'',description:'',docs:[]}); autoSave(); render(); }
-function updEdu(id,f,v) { var e=state.data.education.find(function(x){return x.id==id;}); if(e){e[f]=v; renderPreview();} }
+function updEdu(id,f,v) { var e=state.data.education.find(function(x){return x.id==id;}); if(e){e[f]=v; if(f==='textAlign'||f==='listType'){autoSave();render();}else{renderPreview();}} }
 function rmEdu(id) { state.data.education=state.data.education.filter(function(x){return x.id!=id;}); autoSave(); render(); }
 function addEduDoc(id) { var e=state.data.education.find(function(x){return x.id==id;}); if(e){if(!e.docs)e.docs=[];e.docs.push({name:'',url:''});render();} }
 function updEduDoc(id,i,f,v) { var e=state.data.education.find(function(x){return x.id==id;}); if(e&&e.docs&&e.docs[i]){e.docs[i][f]=v;renderPreview();} }
@@ -455,29 +455,55 @@ function richTxta(label, val, handler, alignHandler, listHandler, textAlign, lis
   cls = cls || '';
   textAlign = textAlign || 'left';
   listType = listType || 'none';
+
+  // Alignment buttons
   var alignBtns = ['left','center','right','justify'].map(function(a){
     var icons = {left:'⬅',center:'↔',right:'➡',justify:'≡'};
     var on = textAlign === a;
     return '<button type="button" onclick="'+alignHandler.replace('this.value',"'"+a+"'")+'" title="Rata '+a+'" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+icons[a]+'</button>';
   }).join('');
+
+  // List buttons
   var listBtns = [
-    {v:'none',  icon:'T', title:'Teks biasa'},
+    {v:'none',  icon:'T',  title:'Teks biasa'},
     {v:'bullet',icon:'•≡', title:'Bullets'},
     {v:'number',icon:'1≡', title:'Numbering'}
   ].map(function(b){
     var on = listType === b.v;
-    return '<button type="button" onclick="'+listHandler.replace('this.value',"'"+b.v+"'")+'" title="'+b.title+'" style="padding:0 6px;height:24px;border-radius:5px;font-size:11px;font-weight:600;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';
+    return '<button type="button" onclick="'+listHandler.replace('this.value',"'"+b.v+"'")+'" title="'+b.title+'" style="padding:0 8px;height:24px;border-radius:5px;font-size:11px;font-weight:700;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';
   }).join('');
-  return '<div class="'+cls+'">'+
-    '<label class="field-label">'+label+'</label>'+
-    '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">'+
-      alignBtns+
-      '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></span>'+
-      listBtns+
-      '<span style="font-size:10px;color:#94a3b8;margin-left:6px">Format teks</span>'+
-    '</div>'+
-    '<textarea class="field-input" rows="4" oninput="'+handler+'" style="text-align:'+textAlign+';resize:vertical;min-height:80px">'+esc(val)+'</textarea>'+
+
+  var placeholder = listType==='bullet' ? 'Ketik setiap poin di baris baru (akan menjadi bullet di CV)' :
+                    listType==='number' ? 'Ketik setiap poin di baris baru (akan menjadi nomor di CV)' :
+                    'Tuliskan 2-4 kalimat yang merangkum pengalaman, keahlian utama, dan value proposition Anda...';
+
+  return '<div class="'+cls+'">' +
+    '<label class="field-label">'+label+'</label>' +
+    '<div style="display:flex;gap:3px;margin-bottom:4px;align-items:center;flex-wrap:wrap">' +
+      alignBtns +
+      '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 3px;display:inline-block"></span>' +
+      listBtns +
+    '</div>' +
+    '<textarea class="field-input" rows="4" oninput="'+handler+'" style="text-align:'+textAlign+';resize:vertical;min-height:80px" placeholder="'+placeholder+'">'+esc(val)+'</textarea>' +
   '</div>';
+}
+
+// Insert text formatting marker into a textarea (Bold, Italic, Underline)
+// Uses markdown-style markers: **bold**, _italic_, __underline__
+function insertFormat(taSelector, marker) {
+  var ta = document.querySelector(taSelector);
+  if (!ta) return;
+  var start = ta.selectionStart;
+  var end = ta.selectionEnd;
+  var sel = ta.value.substring(start, end);
+  var replacement = sel ? marker + sel + marker : marker + marker;
+  ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
+  // Position cursor inside the markers if no selection
+  var newPos = sel ? start + replacement.length : start + marker.length;
+  ta.setSelectionRange(newPos, newPos);
+  ta.focus();
+  // Trigger oninput to sync state
+  ta.dispatchEvent(new Event('input', {bubbles: true}));
 }
 
 function formPersonal() {
@@ -513,6 +539,44 @@ function formPersonal() {
     atsTip('Ringkasan Profil', 'Gunakan kata kunci dari lowongan yang dituju. Sebutkan tahun pengalaman, keahlian utama, dan pencapaian terukur. Hindari kata subjektif seperti "pekerja keras" — ganti dengan bukti konkret.');
 }
 
+// Reusable formatting toolbar for textareas
+// entityType: 'Exp' | 'Edu' etc. (matches updExp/updEdu)
+// entityId: the id
+function buildToolbar(entityId, entityType, textAlign, listType) {
+  textAlign = textAlign || 'left';
+  listType  = listType  || 'none';
+  var taId = 'ta-'+entityType.toLowerCase()+'-'+entityId;
+  var updFn = entityType === 'Exp' ? 'updExp' : entityType === 'Edu' ? 'updEdu' : 'updOrg';
+
+  // Alignment buttons
+  var alignBtns = ['left','center','right','justify'].map(function(a){
+    var icons = {left:'⬅',center:'↔',right:'➡',justify:'≡'};
+    var on = textAlign === a;
+    return '<button type="button" onclick="'+updFn+'('+entityId+',\'textAlign\',\''+a+'\')" title="Rata '+a+'" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+icons[a]+'</button>';
+  }).join('');
+
+  // List type buttons
+  var listBtns = [{v:'none',icon:'¶',title:'Teks biasa'},{v:'bullet',icon:'•≡',title:'Bullets'},{v:'number',icon:'1≡',title:'Numbering'}].map(function(b){
+    var on = listType === b.v;
+    return '<button type="button" onclick="'+updFn+'('+entityId+',\'listType\',\''+b.v+'\')" title="'+b.title+'" style="padding:0 7px;height:24px;border-radius:5px;font-size:11px;font-weight:700;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';
+  }).join('');
+
+  // Bold / Italic / Underline buttons (insert markdown markers)
+  var fmtBtns =
+    '<button type="button" onclick="insertFormat(\'#'+taId+'\',\'**\')" title="Bold" style="width:26px;height:24px;border-radius:5px;font-size:13px;font-weight:900;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer"><b>B</b></button>' +
+    '<button type="button" onclick="insertFormat(\'#'+taId+'\',\'_\')" title="Italic" style="width:26px;height:24px;border-radius:5px;font-size:13px;font-weight:400;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;font-style:italic"><i>I</i></button>' +
+    '<button type="button" onclick="insertFormat(\'#'+taId+'\',\'__\')" title="Underline" style="width:26px;height:24px;border-radius:5px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;text-decoration:underline"><u>U</u></button>';
+
+  return '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center;flex-wrap:wrap">' +
+    alignBtns +
+    '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 2px"></span>' +
+    listBtns +
+    '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 2px"></span>' +
+    fmtBtns +
+    '<span style="font-size:10px;color:#94a3b8;margin-left:6px">Format teks</span>' +
+  '</div>';
+}
+
 function formExperience() {
   var html = '<div class="section-title">💼 Pengalaman Kerja</div>';
   state.data.experiences.forEach(function(exp) {
@@ -529,12 +593,8 @@ function formExperience() {
           '<label class="field-label" style="margin:0">Deskripsi Tugas & Pencapaian</label>' +
           '<button onclick="aiEnhanceExp('+exp.id+')" title="Tingkatkan dengan AI" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;border:1px solid #c4b5fd;background:linear-gradient(135deg,#ede9fe,#f5f3ff);color:#6d28d9;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🪄 AI Enhance</button>' +
         '</div>' +
-        '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">' +
-          ['left','center','right','justify'].map(function(a){var icons={left:'⬅',center:'↔',right:'➡',justify:'≡'};var on=(exp.textAlign||'left')===a;return '<button type="button" onclick="updExp('+exp.id+',\'textAlign\',\''+a+'\')" title="Rata '+a+'" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+icons[a]+'</button>';}).join('') +
-          '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></span>' +
-          [{v:'none',icon:'T',title:'Teks biasa'},{v:'bullet',icon:'•≡',title:'Bullets'},{v:'number',icon:'1≡',title:'Numbering'}].map(function(b){var on=(exp.listType||'none')===b.v;return '<button type="button" onclick="updExp('+exp.id+',\'listType\',\''+b.v+'\')" title="'+b.title+'" style="padding:0 6px;height:24px;border-radius:5px;font-size:11px;font-weight:600;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';}).join('') +
-        '</div>' +
-        '<textarea class="field-input" data-exp-desc="'+exp.id+'" rows="4" oninput="updExp('+exp.id+',\'description\',this.value)" onfocus="rememberExpFocus('+exp.id+')" style="text-align:'+(exp.textAlign||'left')+';resize:vertical;min-height:80px" placeholder="Pisahkan dengan Enter. Mulai baris dengan - atau 1. untuk bullet/numbering. Klik 🪄 untuk AI Enhance.">'+esc(exp.description)+'</textarea>' +
+        buildToolbar(exp.id, 'Exp', exp.textAlign, exp.listType) +
+        '<textarea class="field-input" id="ta-exp-'+exp.id+'" data-exp-desc="'+exp.id+'" rows="4" oninput="updExp('+exp.id+',\'description\',this.value)" onfocus="rememberExpFocus('+exp.id+')" style="text-align:'+(exp.textAlign||'left')+';resize:vertical;min-height:80px" placeholder="Ketik deskripsi. Gunakan toolbar di atas untuk format teks. Preview CV di kanan akan menampilkan hasil akhirnya.">'+esc(exp.description)+'</textarea>' +
       '</div>' +
       '</div>' +
       renderDocs(exp.docs || [], 'Exp', exp.id) +
@@ -557,12 +617,8 @@ function formEducation() {
       inp('Tahun Selesai','text',edu.endDate,"updEdu("+edu.id+",'endDate',this.value)",'2023','') +
       '<div class="col-full">'+
         '<label class="field-label">Keterangan Tambahan</label>'+
-        '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">'+
-          ['left','center','right','justify'].map(function(a){var icons={left:'⬅',center:'↔',right:'➡',justify:'≡'};var on=(edu.textAlign||'left')===a;return '<button type="button" onclick="updEdu('+edu.id+',\'textAlign\',\''+a+'\')" title="Rata '+a+'" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+icons[a]+'</button>';}).join('')+
-          '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></span>'+
-          [{v:'none',icon:'T',title:'Teks biasa'},{v:'bullet',icon:'•≡',title:'Bullets'},{v:'number',icon:'1≡',title:'Numbering'}].map(function(b){var on=(edu.listType||'none')===b.v;return '<button type="button" onclick="updEdu('+edu.id+',\'listType\',\''+b.v+'\')" title="'+b.title+'" style="padding:0 6px;height:24px;border-radius:5px;font-size:11px;font-weight:600;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';}).join('')+
-        '</div>'+
-        '<textarea class="field-input" rows="3" oninput="updEdu('+edu.id+',\'description\',this.value)" style="text-align:'+(edu.textAlign||'left')+';resize:vertical;min-height:70px" placeholder="IPK, prestasi akademik, organisasi kampus...">'+esc(edu.description)+'</textarea>'+
+        buildToolbar(edu.id, 'Edu', edu.textAlign, edu.listType)+
+        '<textarea class="field-input" id="ta-edu-'+edu.id+'" rows="3" oninput="updEdu('+edu.id+',\'description\',this.value)" style="text-align:'+(edu.textAlign||'left')+';resize:vertical;min-height:70px" placeholder="IPK, prestasi akademik, organisasi kampus...">'+esc(edu.description)+'</textarea>'+
       '</div>' +
       '</div>' +
       renderDocs(edu.docs || [], 'Edu', edu.id) +
@@ -1187,11 +1243,14 @@ function renderPreview() {
 
 // Save tab scroll position before re-render, restore after
 var _tabScrollPos = 0;
+var _formScrollPos = 0;
 
 function render() {
   // Save current scroll position before rebuilding DOM
   var oldScroll = document.getElementById('tabsScroll');
   if (oldScroll) _tabScrollPos = oldScroll.scrollLeft;
+  var oldFormScroll = document.querySelector('.form-scroll');
+  if (oldFormScroll) _formScrollPos = oldFormScroll.scrollTop;
 
   var tabs = [
     {id:'personal',       icon:'👤', label:'Pribadi'},
@@ -1304,10 +1363,11 @@ function render() {
       var sc = document.getElementById('tabsScroll');
       if (sc) {
         sc.scrollLeft = _tabScrollPos;
-        // Also scroll active tab into view if it's not visible
         var activeBtn = sc.querySelector('.tab-btn.active');
         if (activeBtn) activeBtn.scrollIntoView({block:'nearest', inline:'nearest'});
       }
+      var fs = document.querySelector('.form-scroll');
+      if (fs) fs.scrollTop = _formScrollPos;
     });
   } else {
     setTimeout(function(){
@@ -1319,6 +1379,8 @@ function render() {
         var activeBtn = sc.querySelector('.tab-btn.active');
         if (activeBtn) activeBtn.scrollIntoView({block:'nearest', inline:'nearest'});
       }
+      var fs = document.querySelector('.form-scroll');
+      if (fs) fs.scrollTop = _formScrollPos;
     }, 30);
   }
 }

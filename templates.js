@@ -218,6 +218,20 @@ function mutedColor(cfg) {
 //   These read CSS variables so density/accent apply uniformly
 // ============================================================
 
+// Apply inline markdown-style formatting: **bold**, _italic_, __underline__
+function applyInlineFormat(text) {
+  if (!text) return '';
+  // Must escape first, then apply formatting on escaped text
+  var s = esc(text);
+  // Bold: **text**
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Underline: __text__
+  s = s.replace(/__([^_]+)__/g, '<u>$1</u>');
+  // Italic: _text_ (single underscore, not double)
+  s = s.replace(/_([^_]+)_/g, '<em>$1</em>');
+  return s;
+}
+
 // Smart paragraph/bullet renderer:
 // - Lines starting with -, *, • or 1. → rendered as list items  
 // - All other lines → rendered as paragraphs preserving line breaks
@@ -237,7 +251,7 @@ function tplRichText(text, textAlign, listType) {
     var tag = listType === 'number' ? 'ol' : 'ul';
     var listStyle = listType === 'number' ? 'decimal' : 'disc';
     htmlOut += '<'+tag+' style="margin:4px 0;padding-left:18px;list-style-type:'+listStyle+';text-align:'+textAlign+'">' +
-      listItems.map(function(li){ return '<li style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-bottom:2px;line-height:var(--cv-lh)">'+esc(li.trim().replace(/^[-*•]\s*/,'').replace(/^\d+[.)]\s*/,''))+'</li>'; }).join('') +
+      listItems.map(function(li){ return '<li style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-bottom:2px;line-height:var(--cv-lh)">'+applyInlineFormat(li.trim().replace(/^[-*•]\s*/,'').replace(/^\d+[.)]\s*/,''))+'</li>'; }).join('') +
     '</'+tag+'>';
     listItems = [];
   }
@@ -255,7 +269,7 @@ function tplRichText(text, textAlign, listType) {
         listItems.push(trimmed);
       } else {
         flushList();
-        htmlOut += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:'+textAlign+';margin-bottom:2px">'+esc(trimmed)+'</div>';
+        htmlOut += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:'+textAlign+';margin-bottom:2px">'+applyInlineFormat(trimmed)+'</div>';
       }
     }
   });
@@ -363,7 +377,10 @@ function tplExpEntries(ex) {
         '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(e.position)+'</h3>' +
         '<span style="font-size:var(--cv-fs-small);color:var(--cv-muted);white-space:nowrap">'+fmtDate(e.startDate)+' — '+(e.current?L('present'):fmtDate(e.endDate))+'</span>' +
       '</div>' +
-      '<div style="font-size:var(--cv-fs-small);color:var(--cv-accent);font-weight:500;display:flex;align-items:center;flex-wrap:wrap;gap:4px">'+esc(e.company)+inlineDocs+'</div>' +
+      '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">' +
+        '<span style="font-size:var(--cv-fs-small);color:var(--cv-accent);font-weight:600">'+esc(e.company)+'</span>' +
+        inlineDocs +
+      '</div>' +
       tplRichText(e.description, e.textAlign, e.listType) +
     '</div>';
   });
@@ -388,7 +405,10 @@ function tplEduEntries(ed) {
         '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(e.degree)+'</h3>' +
         '<span style="font-size:var(--cv-fs-small);color:var(--cv-muted);white-space:nowrap">'+esc(e.startDate)+' — '+esc(e.endDate)+'</span>' +
       '</div>' +
-      '<div style="font-size:var(--cv-fs-small);color:var(--cv-accent);font-weight:500;display:flex;align-items:center;flex-wrap:wrap;gap:4px">'+esc(e.institution)+inlineDocs+'</div>' +
+      '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px">' +
+        '<span style="font-size:var(--cv-fs-small);color:var(--cv-accent);font-weight:600">'+esc(e.institution)+'</span>' +
+        inlineDocs +
+      '</div>' +
       tplRichText(e.description, e.textAlign, e.listType) +
     '</div>';
   });
