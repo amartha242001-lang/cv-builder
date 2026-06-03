@@ -20,7 +20,7 @@ var state = {
   showQR: false,     // show QR code (to LinkedIn/website) on CV
   fontOverride: '',  // '' = use template default font; else overrides all layouts
   sectionOrder: ['summary','experience','education','skills','certifications','projects','awards','organizations','hobbies','references','languages'],
-  coverLetter: { company:'', recipient:'', position:'', date:'', body:'', bodyAlign:'justify', sigName:'', sigEmail:'', sigPhone:'', signature:'' },
+  coverLetter: { company:'', recipient:'', position:'', date:'', body:'', bodyAlign:'justify', sigName:'', sigEmail:'', sigPhone:'', signature:'', senderName:'', senderTitle:'', senderEmail:'', senderPhone:'', senderLocation:'', senderLinkedin:'' },
   data: {
     personalInfo: {fullName:'',jobTitle:'',email:'',phone:'',location:'',linkedin:'',website:'',summary:''},
     photo: '',          // base64 data URL of profile photo
@@ -58,10 +58,16 @@ function loadSavedData() {
           state.coverLetter = parsed.coverLetter;
           // backward compat: ensure new fields exist
           if (!state.coverLetter.bodyAlign) state.coverLetter.bodyAlign = 'justify';
-          if (!state.coverLetter.sigName) state.coverLetter.sigName = '';
-          if (!state.coverLetter.sigEmail) state.coverLetter.sigEmail = '';
-          if (!state.coverLetter.sigPhone) state.coverLetter.sigPhone = '';
+          if (state.coverLetter.sigName === undefined) state.coverLetter.sigName = '';
+          if (state.coverLetter.sigEmail === undefined) state.coverLetter.sigEmail = '';
+          if (state.coverLetter.sigPhone === undefined) state.coverLetter.sigPhone = '';
           if (!state.coverLetter.signature) state.coverLetter.signature = '';
+          if (state.coverLetter.senderName === undefined) state.coverLetter.senderName = '';
+          if (state.coverLetter.senderTitle === undefined) state.coverLetter.senderTitle = '';
+          if (state.coverLetter.senderEmail === undefined) state.coverLetter.senderEmail = '';
+          if (state.coverLetter.senderPhone === undefined) state.coverLetter.senderPhone = '';
+          if (state.coverLetter.senderLocation === undefined) state.coverLetter.senderLocation = '';
+          if (state.coverLetter.senderLinkedin === undefined) state.coverLetter.senderLinkedin = '';
         }
         // Ensure all arrays exist (backward compatibility)
         if (!state.data.experiences) state.data.experiences = [];
@@ -318,7 +324,7 @@ function loadSample() {
 function resetData() {
   if (confirm('Yakin ingin menghapus semua data? Tindakan ini tidak bisa dibatalkan.')) {
     state.data = {personalInfo:{fullName:'',jobTitle:'',email:'',phone:'',location:'',linkedin:'',website:'',summary:''},photo:'',experiences:[],education:[],skills:[],languages:[],certifications:[],projects:[],organizations:[],awards:[],hobbies:[],references:[]};
-    state.coverLetter = { company:'', recipient:'', position:'', date:'', body:'', bodyAlign:'justify', sigName:'', sigEmail:'', sigPhone:'', signature:'' };
+    state.coverLetter = { company:'', recipient:'', position:'', date:'', body:'', bodyAlign:'justify', sigName:'', sigEmail:'', sigPhone:'', signature:'', senderName:'', senderTitle:'', senderEmail:'', senderPhone:'', senderLocation:'', senderLinkedin:'' };
     saveToStorage();
     render();
   }
@@ -403,6 +409,22 @@ function removePhoto() { state.data.photo = ''; autoSave(); render(); }
 
 // Cover letter
 function updCover(f,v) { state.coverLetter[f]=v; renderPreview(); }
+function syncCoverFromCV() {
+  var p = state.data.personalInfo;
+  state.coverLetter.senderName    = p.fullName    || '';
+  state.coverLetter.senderTitle   = p.jobTitle    || '';
+  state.coverLetter.senderEmail   = p.email       || '';
+  state.coverLetter.senderPhone   = p.phone       || '';
+  state.coverLetter.senderLocation= p.location    || '';
+  state.coverLetter.senderLinkedin= p.linkedin    || '';
+  // Also fill signature block if empty
+  if (!state.coverLetter.sigName)  state.coverLetter.sigName  = p.fullName || '';
+  if (!state.coverLetter.sigEmail) state.coverLetter.sigEmail = p.email    || '';
+  if (!state.coverLetter.sigPhone) state.coverLetter.sigPhone = p.phone    || '';
+  autoSave();
+  render();
+  if (typeof toast === 'function') toast('✅ Data dari CV berhasil di-sync ke Surat Lamaran');
+}
 
 // Signature image upload for cover letter
 function uploadSignature(input) {
@@ -794,14 +816,22 @@ function formReferences() {
 
 function formCover() {
   var c = state.coverLetter;
-  var p = state.data.personalInfo;
 
-  // Sync info banner
-  var syncInfo = '<div style="padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;margin-bottom:14px;font-size:11px;color:#1e40af">' +
-    '<strong>🔄 Data otomatis dari CV:</strong> ' +
-    (p.fullName?esc(p.fullName):'<i>(Nama belum diisi)</i>') +
-    (p.email?' • '+esc(p.email):'') + (p.phone?' • '+esc(p.phone):'') +
-    '<br><span style="color:#64748b">Nama, email & telepon di bagian penutup bisa diedit manual di bawah.</span>' +
+  // Sender info block (independent from CV)
+  var senderBlock = '<div style="margin-bottom:16px;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+      '<div style="font-size:12px;font-weight:700;color:#1e293b">👤 Info Pengirim Surat</div>' +
+      '<button onclick="syncCoverFromCV()" style="padding:5px 12px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🔄 Sync dari CV</button>' +
+    '</div>' +
+    '<div class="form-grid">' +
+    inp('Nama Lengkap','text',c.senderName||'',"updCover('senderName',this.value)",'Nama Anda di kop surat','col-full') +
+    inp('Jabatan / Posisi','text',c.senderTitle||'',"updCover('senderTitle',this.value)",'Jabatan Anda','col-full') +
+    inp('Email','email',c.senderEmail||'',"updCover('senderEmail',this.value)",'Email Anda','') +
+    inp('Telepon','tel',c.senderPhone||'',"updCover('senderPhone',this.value)",'No. HP Anda','') +
+    inp('Lokasi','text',c.senderLocation||'',"updCover('senderLocation',this.value)",'Kota, Provinsi','') +
+    inp('LinkedIn','text',c.senderLinkedin||'',"updCover('senderLinkedin',this.value)",'linkedin.com/in/...','') +
+    '</div>' +
+    '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Info ini ditampilkan di kop surat. Klik "🔄 Sync dari CV" untuk isi otomatis dari data CV Anda.</div>' +
   '</div>';
 
   // Text alignment buttons
@@ -818,9 +848,9 @@ function formCover() {
   var sigBlock = '<div style="margin-top:16px;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px">' +
     '<div style="font-size:12px;font-weight:700;color:#1e293b;margin-bottom:10px">✍️ Bagian Penutup & Tanda Tangan</div>' +
     '<div class="form-grid">' +
-    inp('Nama (penutup)','text',c.sigName||p.fullName||'',"updCover('sigName',this.value)",'Nama di bawah tanda tangan','col-full') +
-    inp('Email (penutup)','text',c.sigEmail||p.email||'',"updCover('sigEmail',this.value)",'Email di bawah tanda tangan','') +
-    inp('No. HP (penutup)','text',c.sigPhone||p.phone||'',"updCover('sigPhone',this.value)",'Nomor HP di bawah tanda tangan','') +
+    inp('Nama (penutup)','text',c.sigName||'',"updCover('sigName',this.value)",'Nama di bawah tanda tangan','col-full') +
+    inp('Email (penutup)','text',c.sigEmail||'',"updCover('sigEmail',this.value)",'Email di bawah tanda tangan','') +
+    inp('No. HP (penutup)','text',c.sigPhone||'',"updCover('sigPhone',this.value)",'Nomor HP di bawah tanda tangan','') +
     '</div>' +
     '<div style="margin-top:10px"><label class="field-label">Upload Tanda Tangan (gambar JPG/PNG, maks 2MB)</label>' +
     '<div style="display:flex;align-items:center;gap:10px;margin-top:6px">' +
@@ -834,17 +864,17 @@ function formCover() {
   '</div>';
 
   return '<div class="section-title">✉️ Surat Lamaran Kerja</div>' +
-    syncInfo +
+    senderBlock +
     '<div class="form-grid">' +
-    inp('Perusahaan Tujuan','text',c.company,"updCover('company',this.value)",'Contoh: PT Bank Negara Indonesia','col-full') +
-    inp('Nama Penerima / HRD','text',c.recipient,"updCover('recipient',this.value)",'Contoh: Ibu Sarah, HR Manager','col-full') +
-    inp('Posisi yang Dilamar','text',c.position,"updCover('position',this.value)",'Contoh: Senior Internal Auditor','') +
-    inp('Tanggal Surat','text',c.date,"updCover('date',this.value)",'Kosongkan = tanggal hari ini','') +
+    inp('Perusahaan Tujuan','text',c.company||'',"updCover('company',this.value)",'Contoh: PT Bank Negara Indonesia','col-full') +
+    inp('Nama Penerima / HRD','text',c.recipient||'',"updCover('recipient',this.value)",'Contoh: Ibu Sarah, HR Manager','col-full') +
+    inp('Posisi yang Dilamar','text',c.position||'',"updCover('position',this.value)",'Contoh: Senior Internal Auditor','') +
+    inp('Tanggal Surat','text',c.date||'',"updCover('date',this.value)",'Kosongkan = tanggal hari ini','') +
     '</div>' +
     alignBtns +
-    txta('Isi Surat Lamaran',c.body,"updCover('body',this.value)",'Tuliskan isi surat lamaran Anda. Pisahkan paragraf dengan Enter dua kali...',12,'col-full') +
+    txta('Isi Surat Lamaran',c.body||'',"updCover('body',this.value)",'Tuliskan isi surat lamaran Anda. Pisahkan paragraf dengan Enter dua kali...',12,'col-full') +
     sigBlock +
-    atsTip('Surat Lamaran', 'Buat singkat (maksimal 1 halaman, 3-4 paragraf). Sebutkan posisi yang dilamar, kualifikasi utama yang relevan, dan alasan tertarik pada perusahaan. Klik "📋 Contoh Data" untuk draf otomatis.');
+    atsTip('Surat Lamaran', 'Isi "Info Pengirim Surat" di atas untuk mengisi kop surat. Klik "🔄 Sync dari CV" untuk isi otomatis, atau isi manual jika ingin berbeda dari CV.');
 }
 
 function formJobMatch() {

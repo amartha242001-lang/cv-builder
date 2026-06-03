@@ -770,8 +770,8 @@ function renderCoverLetter(cfg, vars, dens) {
     forceBlack: false,
     charcoal: false
   };
-  var p = state.data.personalInfo;
   var c = state.coverLetter || {};
+  var p = state.data.personalInfo; // fallback only — cover letter uses c.sender* fields
   var lang = (typeof state !== 'undefined' && state.lang) ? state.lang : 'id';
 
   // Today's date in chosen language
@@ -792,18 +792,24 @@ function renderCoverLetter(cfg, vars, dens) {
 
   var html = '<div class="cv-render" style="'+vars+'font-family:'+neutralCfg.font+';padding:26mm 24mm;line-height:var(--cv-lh)">';
 
-  // Letterhead (synced from CV personal info) — only show border if there's content
-  var contact = [];
-  if (p.email) contact.push(esc(p.email));
-  if (p.phone) contact.push(esc(p.phone));
-  if (p.location) contact.push(esc(p.location));
-  if (p.linkedin) contact.push(esc(p.linkedin));
-  var hasLetterhead = !!(p.fullName || p.jobTitle || contact.length);
+  // Letterhead — uses cover letter's OWN sender fields, NOT CV personal info
+  var sName     = c.senderName     || '';
+  var sTitle    = c.senderTitle    || '';
+  var sEmail    = c.senderEmail    || '';
+  var sPhone    = c.senderPhone    || '';
+  var sLocation = c.senderLocation || '';
+  var sLinkedin = c.senderLinkedin || '';
+  var sContact  = [];
+  if (sEmail)    sContact.push(esc(sEmail));
+  if (sPhone)    sContact.push(esc(sPhone));
+  if (sLocation) sContact.push(esc(sLocation));
+  if (sLinkedin) sContact.push(esc(sLinkedin));
+  var hasLetterhead = !!(sName || sTitle || sContact.length);
   if (hasLetterhead) {
     html += '<div style="border-bottom:1px solid #d1d5db;padding-bottom:10px;margin-bottom:18px">';
-    if (p.fullName) html += '<h1 style="font-size:16pt;font-weight:700;margin:0;color:#1a1a1a;font-family:'+neutralCfg.font+'">'+esc(p.fullName)+'</h1>';
-    if (p.jobTitle) html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-accent);font-weight:500;margin-top:2px">'+esc(p.jobTitle)+'</div>';
-    if (contact.length) html += '<div style="font-size:var(--cv-fs-small);color:#6b7280;margin-top:5px">'+contact.join(' &nbsp;|&nbsp; ')+'</div>';
+    if (sName)  html += '<h1 style="font-size:16pt;font-weight:700;margin:0;color:#1a1a1a;font-family:'+neutralCfg.font+'">'+esc(sName)+'</h1>';
+    if (sTitle) html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-accent);font-weight:500;margin-top:2px">'+esc(sTitle)+'</div>';
+    if (sContact.length) html += '<div style="font-size:var(--cv-fs-small);color:#6b7280;margin-top:5px">'+sContact.join(' &nbsp;|&nbsp; ')+'</div>';
     html += '</div>';
   }
 
@@ -834,9 +840,10 @@ function renderCoverLetter(cfg, vars, dens) {
   html += '</div>';
 
   // Signature block — right-aligned like the PDF sample
-  var sigName  = (c.sigName  && c.sigName.trim())  ? c.sigName  : (p.fullName  || '');
-  var sigEmail = (c.sigEmail && c.sigEmail.trim()) ? c.sigEmail : (p.email     || '');
-  var sigPhone = (c.sigPhone && c.sigPhone.trim()) ? c.sigPhone : (p.phone     || '');
+  // Signature uses cover letter's own sig fields — no fallback to CV personalInfo
+  var sigName  = (c.sigName  && c.sigName.trim())  ? c.sigName  : '';
+  var sigEmail = (c.sigEmail && c.sigEmail.trim()) ? c.sigEmail : '';
+  var sigPhone = (c.sigPhone && c.sigPhone.trim()) ? c.sigPhone : '';
 
   html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-top:28px;text-align:right">' +
     '<div style="margin-bottom:12px">'+T.regard+'</div>';
