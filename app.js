@@ -235,7 +235,47 @@ function fmtDate(d) {
 // ============================================================
 // ACTIONS
 // ============================================================
-function setSection(s) { state.section = s; closeMoreTabs(); render(); }
+function setSection(s) {
+  state.section = s;
+  closeMoreTabs();
+  render();
+  // Scroll preview to the relevant section heading after render
+  requestAnimationFrame(function() {
+    var preview = document.getElementById('cvOutput');
+    if (!preview) return;
+    var sectionMap = {
+      experience: ['Pengalaman Kerja','Work Experience'],
+      education: ['Pendidikan','Education'],
+      skills: ['Keahlian','Skills'],
+      certifications: ['Sertifikasi','Certifications'],
+      projects: ['Proyek','Projects'],
+      organizations: ['Organisasi','Organizations'],
+      awards: ['Penghargaan','Awards'],
+      hobbies: ['Hobi','Hobbies'],
+      references: ['Referensi','References'],
+      languages: ['Bahasa','Languages']
+    };
+    var targets = sectionMap[s];
+    if (!targets) return;
+    var headings = preview.querySelectorAll('h2');
+    for (var i = 0; i < headings.length; i++) {
+      var htxt = headings[i].textContent || headings[i].innerText || '';
+      for (var j = 0; j < targets.length; j++) {
+        if (htxt.toUpperCase().indexOf(targets[j].toUpperCase()) !== -1) {
+          var panel = document.querySelector('.panel-right');
+          if (panel) {
+            var paperTop = document.querySelector('.cv-paper-wrapper');
+            if (paperTop) {
+              var headingOffset = headings[i].getBoundingClientRect().top - paperTop.getBoundingClientRect().top;
+              panel.scrollTop = headingOffset + panel.scrollTop - 60;
+            }
+          }
+          return;
+        }
+      }
+    }
+  });
+}
 function toggleMoreTabs() {
   var m = document.getElementById('moreTabsMenu');
   if (m) m.style.display = m.style.display === 'none' ? 'block' : 'none';
@@ -447,7 +487,7 @@ function inp(label, type, val, handler, ph, cls) {
 }
 function txta(label, val, handler, ph, rows, cls) {
   cls = cls || '';
-  return '<div class="'+cls+'"><label class="field-label">'+label+'</label><textarea class="field-input" rows="'+(rows||3)+'" oninput="'+handler+'" placeholder="'+ph+'" style="resize:vertical;min-height:60px">'+esc(val)+'</textarea></div>';
+  return '<div class="'+cls+'"><label class="field-label">'+label+'</label><textarea class="field-input" rows="'+(rows||3)+'" oninput="'+handler+'" onfocus="rememberFocus(this)" placeholder="'+ph+'" style="resize:vertical;min-height:60px">'+esc(val)+'</textarea></div>';
 }
 
 // Rich textarea: text-align toolbar + bullets/numbering + resizable
@@ -490,19 +530,24 @@ function richTxta(label, val, handler, alignHandler, listHandler, textAlign, lis
 
 // Insert text formatting marker into a textarea (Bold, Italic, Underline)
 // Uses markdown-style markers: **bold**, _italic_, __underline__
-function insertFormat(taSelector, marker) {
-  var ta = document.querySelector(taSelector);
-  if (!ta) return;
-  var start = ta.selectionStart;
-  var end = ta.selectionEnd;
+function insertFormat(marker) {
+  var ta = _lastFocusedTA;
+  if (!ta || !ta.parentNode) {
+    // fallback: find any focused textarea
+    ta = document.activeElement;
+    if (!ta || ta.tagName !== 'TEXTAREA') {
+      if (typeof toast === 'function') toast('Klik dulu pada kotak teks yang ingin diformat.');
+      return;
+    }
+  }
+  var start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+  var end   = ta.selectionEnd   != null ? ta.selectionEnd   : ta.value.length;
   var sel = ta.value.substring(start, end);
   var replacement = sel ? marker + sel + marker : marker + marker;
   ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
-  // Position cursor inside the markers if no selection
   var newPos = sel ? start + replacement.length : start + marker.length;
   ta.setSelectionRange(newPos, newPos);
   ta.focus();
-  // Trigger oninput to sync state
   ta.dispatchEvent(new Event('input', {bubbles: true}));
 }
 
@@ -561,19 +606,11 @@ function buildToolbar(entityId, entityType, textAlign, listType) {
     return '<button type="button" onclick="'+updFn+'('+entityId+',\'listType\',\''+b.v+'\')" title="'+b.title+'" style="padding:0 7px;height:24px;border-radius:5px;font-size:11px;font-weight:700;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';
   }).join('');
 
-  // Bold / Italic / Underline buttons (insert markdown markers)
-  var fmtBtns =
-    '<button type="button" onclick="insertFormat(\'#'+taId+'\',\'**\')" title="Bold" style="width:26px;height:24px;border-radius:5px;font-size:13px;font-weight:900;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer"><b>B</b></button>' +
-    '<button type="button" onclick="insertFormat(\'#'+taId+'\',\'_\')" title="Italic" style="width:26px;height:24px;border-radius:5px;font-size:13px;font-weight:400;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;font-style:italic"><i>I</i></button>' +
-    '<button type="button" onclick="insertFormat(\'#'+taId+'\',\'__\')" title="Underline" style="width:26px;height:24px;border-radius:5px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;text-decoration:underline"><u>U</u></button>';
-
   return '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center;flex-wrap:wrap">' +
     alignBtns +
     '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 2px"></span>' +
     listBtns +
-    '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 2px"></span>' +
-    fmtBtns +
-    '<span style="font-size:10px;color:#94a3b8;margin-left:6px">Format teks</span>' +
+    '<span style="font-size:10px;color:#94a3b8;margin-left:6px">Alignment & list</span>' +
   '</div>';
 }
 
@@ -594,7 +631,7 @@ function formExperience() {
           '<button onclick="aiEnhanceExp('+exp.id+')" title="Tingkatkan dengan AI" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;border:1px solid #c4b5fd;background:linear-gradient(135deg,#ede9fe,#f5f3ff);color:#6d28d9;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🪄 AI Enhance</button>' +
         '</div>' +
         buildToolbar(exp.id, 'Exp', exp.textAlign, exp.listType) +
-        '<textarea class="field-input" id="ta-exp-'+exp.id+'" data-exp-desc="'+exp.id+'" rows="4" oninput="updExp('+exp.id+',\'description\',this.value)" onfocus="rememberExpFocus('+exp.id+')" style="text-align:'+(exp.textAlign||'left')+';resize:vertical;min-height:80px" placeholder="Ketik deskripsi. Gunakan toolbar di atas untuk format teks. Preview CV di kanan akan menampilkan hasil akhirnya.">'+esc(exp.description)+'</textarea>' +
+        '<textarea class="field-input" id="ta-exp-'+exp.id+'" data-exp-desc="'+exp.id+'" rows="4" oninput="updExp('+exp.id+',\'description\',this.value)" onfocus="rememberExpFocus('+exp.id+');rememberFocus(this)" style="text-align:'+(exp.textAlign||'left')+';resize:vertical;min-height:80px" placeholder="Ketik deskripsi. Klik 🪄 AI Enhance untuk format otomatis. Bullets aktif = bullet muncul di preview CV.">'+esc(exp.description)+'</textarea>' +
       '</div>' +
       '</div>' +
       renderDocs(exp.docs || [], 'Exp', exp.id) +
@@ -618,7 +655,7 @@ function formEducation() {
       '<div class="col-full">'+
         '<label class="field-label">Keterangan Tambahan</label>'+
         buildToolbar(edu.id, 'Edu', edu.textAlign, edu.listType)+
-        '<textarea class="field-input" id="ta-edu-'+edu.id+'" rows="3" oninput="updEdu('+edu.id+',\'description\',this.value)" style="text-align:'+(edu.textAlign||'left')+';resize:vertical;min-height:70px" placeholder="IPK, prestasi akademik, organisasi kampus...">'+esc(edu.description)+'</textarea>'+
+        '<textarea class="field-input" id="ta-edu-'+edu.id+'" rows="3" oninput="updEdu('+edu.id+',\'description\',this.value)" onfocus="rememberFocus(this)" style="text-align:'+(edu.textAlign||'left')+';resize:vertical;min-height:70px" placeholder="IPK, prestasi akademik, organisasi kampus...">'+esc(edu.description)+'</textarea>'+
       '</div>' +
       '</div>' +
       renderDocs(edu.docs || [], 'Edu', edu.id) +
@@ -1222,9 +1259,14 @@ function tplQuickControls() {
     var labelShort = d === 'compact' ? 'S' : d === 'normal' ? 'M' : 'L';
     html += '<button onclick="setDensity(\''+d+'\')" title="'+DENSITY_PRESETS[d].label+'" style="width:24px;height:24px;border-radius:6px;font-size:11px;font-weight:600;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer;margin:0 1px">'+labelShort+'</button>';
   });
-  // 🎨 Desain button — opens the Design/Template tab in the left panel
+  // B/I/U buttons — operate on last focused textarea
+  html += '<span style="width:1px;height:20px;background:#e2e8f0;margin-left:10px;margin-right:4px;display:inline-block;vertical-align:middle"></span>';
+  html += '<button onclick="insertFormat(\'**\')" title="Bold (pilih teks dulu di kotak kiri, lalu klik)" style="width:26px;height:26px;border-radius:6px;font-size:13px;font-weight:900;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;vertical-align:middle"><b>B</b></button>';
+  html += '<button onclick="insertFormat(\'_\')" title="Italic" style="width:26px;height:26px;border-radius:6px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;font-style:italic;vertical-align:middle"><i>I</i></button>';
+  html += '<button onclick="insertFormat(\'__\')" title="Underline" style="width:26px;height:26px;border-radius:6px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;text-decoration:underline;vertical-align:middle"><u>U</u></button>';
+  // 🎨 Desain button
   var desainOn = state.section === 'template';
-  html += '<button onclick="setSection(\'template\')" title="Desain & Template" style="margin-left:10px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;border:'+(desainOn?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(desainOn?'#eff6ff':'#fff')+';color:'+(desainOn?'#1d4ed8':'#64748b')+';cursor:pointer;font-family:inherit">🎨 Desain</button>';
+  html += '<button onclick="setSection(\'template\')" title="Desain & Template" style="margin-left:8px;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600;border:'+(desainOn?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(desainOn?'#eff6ff':'#fff')+';color:'+(desainOn?'#1d4ed8':'#64748b')+';cursor:pointer;font-family:inherit;vertical-align:middle">🎨 Desain</button>';
   return html;
 }
 
@@ -1295,20 +1337,20 @@ function render() {
           '<span class="logo-text">CV Builder Pro</span>' +
           '<span class="logo-sub">ATS-Friendly Resume Builder</span>' +
         '</div>' +
-        '<div class="header-actions">' +
+        '<div class="header-actions" style="flex-wrap:nowrap;align-items:center">' +
           renderLangToggle() +
           '<button class="btn btn-ghost" onclick="toggleTheme()" title="Mode Gelap/Terang">'+(state.theme==='dark'?'☀️':'🌙')+'</button>' +
           '<button class="btn btn-ghost" onclick="loadSample()">📋 Contoh Data</button>' +
           '<button class="btn btn-ghost" onclick="resetData()">🗑️ Reset</button>' +
           '<button class="btn btn-ghost" id="saveBtn" onclick="saveData()">💾 Save</button>' +
           // Document switcher (CV / Cover Letter) — centered between Save and Download
-          '<div class="doc-switch" style="display:inline-flex;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;padding:3px;gap:2px">' +
+          '<div class="doc-switch" style="display:inline-flex;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;padding:3px;gap:2px;flex-shrink:0;white-space:nowrap">' +
             '<button onclick="switchDocument(\'cv\')" style="padding:6px 12px;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;'+(state.docMode==='cv'?'background:#1e3a5f;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.2)':'background:transparent;color:#64748b')+'">📄 CV</button>' +
             '<button onclick="switchDocument(\'cover\')" style="padding:6px 12px;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;'+(state.docMode==='cover'?'background:#1e3a5f;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.2)':'background:transparent;color:#64748b')+'">✉️ Cover Letter</button>' +
           '</div>' +
           // "⋯ Lainnya" dropdown in header — between Cover Letter and Download PDF
           '<div style="position:relative;display:inline-block">' +
-            '<button class="btn btn-ghost'+(secondaryActive?' active':'')+'" onclick="toggleMoreTabs()" id="moreTabsBtn" style="'+(secondaryActive?'background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe':'')+'">⋯ Lainnya</button>' +
+            '<button class="btn btn-ghost'+(secondaryActive?' active':'')+'" onclick="toggleMoreTabs()" id="moreTabsBtn" style="white-space:nowrap;flex-shrink:0;'+(secondaryActive?'background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe':'')+'">⋯ Lainnya</button>' +
             '<div id="moreTabsMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:200;min-width:160px;padding:6px">' +
               secondaryTabs.map(function(t){
                 var on = state.section === t.id;

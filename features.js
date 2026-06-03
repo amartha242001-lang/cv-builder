@@ -187,6 +187,9 @@ function toggleVerbCat(cat) {
 var _lastFocusedExpId = null;
 function rememberExpFocus(id) { _lastFocusedExpId = id; }
 
+var _lastFocusedTA = null;
+function rememberFocus(el) { _lastFocusedTA = el; }
+
 function insertVerb(verb) {
   // Find target experience: last focused, else first, else create one
   var list = state.data.experiences;
