@@ -217,13 +217,55 @@ function mutedColor(cfg) {
 // SHARED CONTENT-PIECE BUILDERS
 //   These read CSS variables so density/accent apply uniformly
 // ============================================================
+
+// Smart paragraph/bullet renderer:
+// - Lines starting with -, *, • or 1. → rendered as list items  
+// - All other lines → rendered as paragraphs preserving line breaks
+// - Blank lines between content → paragraph break
+// Respects textAlign and listType fields
+function tplRichText(text, textAlign, listType) {
+  if (!text) return '';
+  textAlign = textAlign || 'left';
+  listType = listType || 'none'; // 'none' | 'bullet' | 'number'
+
+  var lines = text.split('\n');
+  var htmlOut = '';
+  var listItems = [];
+
+  function flushList() {
+    if (!listItems.length) return;
+    var tag = listType === 'number' ? 'ol' : 'ul';
+    var listStyle = listType === 'number' ? 'decimal' : 'disc';
+    htmlOut += '<'+tag+' style="margin:4px 0;padding-left:18px;list-style-type:'+listStyle+';text-align:'+textAlign+'">' +
+      listItems.map(function(li){ return '<li style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-bottom:2px;line-height:var(--cv-lh)">'+esc(li.trim().replace(/^[-*•]\s*/,'').replace(/^\d+[.)]\s*/,''))+'</li>'; }).join('') +
+    '</'+tag+'>';
+    listItems = [];
+  }
+
+  lines.forEach(function(line) {
+    var trimmed = line.trim();
+    if (!trimmed) {
+      flushList();
+      return;
+    }
+    if (listType !== 'none') {
+      listItems.push(trimmed);
+    } else {
+      if (/^[-*•]\s/.test(trimmed) || /^\d+[.)]\s/.test(trimmed)) {
+        listItems.push(trimmed);
+      } else {
+        flushList();
+        htmlOut += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:'+textAlign+';margin-bottom:2px">'+esc(trimmed)+'</div>';
+      }
+    }
+  });
+  flushList();
+  return htmlOut;
+}
+
+// Legacy alias
 function tplBullets(desc) {
-  if (!desc) return '';
-  var lines = desc.split('\n').filter(function(l){return l.trim();});
-  if (!lines.length) return '';
-  return '<ul style="margin:4px 0 0 0;padding-left:16px">' +
-    lines.map(function(l){return '<li style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-bottom:2px;line-height:var(--cv-lh)">'+esc(l)+'</li>';}).join('') +
-    '</ul>';
+  return tplRichText(desc, 'left', 'none');
 }
 
 function tplDocs(docs) {
@@ -306,13 +348,23 @@ function tplContact(p, cfg, opts) {
 function tplExpEntries(ex) {
   var html = '';
   ex.forEach(function(e) {
+    // Build inline doc links to show next to company name
+    var inlineDocs = '';
+    if (e.docs && e.docs.length) {
+      var validDocs = e.docs.filter(function(d){ return d.url && d.name; });
+      if (validDocs.length) {
+        inlineDocs = validDocs.map(function(d){
+          return ' <a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="font-size:var(--cv-fs-small);color:var(--cv-accent);text-decoration:none;margin-left:6px">📎 '+esc(d.name)+'</a>';
+        }).join('');
+      }
+    }
     html += '<div style="margin-bottom:var(--cv-entry-gap)">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
         '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(e.position)+'</h3>' +
         '<span style="font-size:var(--cv-fs-small);color:var(--cv-muted);white-space:nowrap">'+fmtDate(e.startDate)+' — '+(e.current?L('present'):fmtDate(e.endDate))+'</span>' +
       '</div>' +
-      '<div style="font-size:var(--cv-fs-small);color:var(--cv-accent);font-weight:500">'+esc(e.company)+'</div>' +
-      tplBullets(e.description) + tplDocs(e.docs) +
+      '<div style="font-size:var(--cv-fs-small);color:var(--cv-accent);font-weight:500;display:flex;align-items:center;flex-wrap:wrap;gap:4px">'+esc(e.company)+inlineDocs+'</div>' +
+      tplRichText(e.description, e.textAlign, e.listType) +
     '</div>';
   });
   return html;
@@ -321,14 +373,23 @@ function tplExpEntries(ex) {
 function tplEduEntries(ed) {
   var html = '';
   ed.forEach(function(e) {
+    // Build inline doc links next to institution name
+    var inlineDocs = '';
+    if (e.docs && e.docs.length) {
+      var validDocs = e.docs.filter(function(d){ return d.url && d.name; });
+      if (validDocs.length) {
+        inlineDocs = validDocs.map(function(d){
+          return ' <a href="'+esc(d.url)+'" target="_blank" rel="noopener" style="font-size:var(--cv-fs-small);color:var(--cv-accent);text-decoration:none;margin-left:6px">📎 '+esc(d.name)+'</a>';
+        }).join('');
+      }
+    }
     html += '<div style="margin-bottom:var(--cv-entry-gap)">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
         '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(e.degree)+'</h3>' +
         '<span style="font-size:var(--cv-fs-small);color:var(--cv-muted);white-space:nowrap">'+esc(e.startDate)+' — '+esc(e.endDate)+'</span>' +
       '</div>' +
-      '<div style="font-size:var(--cv-fs-small);color:var(--cv-accent);font-weight:500">'+esc(e.institution)+'</div>' +
-      (e.description?'<div style="font-size:var(--cv-fs-small);color:var(--cv-text);margin-top:2px">'+esc(e.description)+'</div>':'') +
-      tplDocs(e.docs) +
+      '<div style="font-size:var(--cv-fs-small);color:var(--cv-accent);font-weight:500;display:flex;align-items:center;flex-wrap:wrap;gap:4px">'+esc(e.institution)+inlineDocs+'</div>' +
+      tplRichText(e.description, e.textAlign, e.listType) +
     '</div>';
   });
   return html;
@@ -348,7 +409,7 @@ function tplProjEntries(pr) {
   pr.forEach(function(proj) {
     html += '<div style="margin-bottom:var(--cv-entry-gap)">' +
       '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(proj.name)+(proj.role?' — <span style="font-weight:400;font-style:italic;color:var(--cv-muted)">'+esc(proj.role)+'</span>':'')+'</h3>' +
-      (proj.description?'<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-top:2px">'+esc(proj.description)+'</div>':'') +
+      (proj.description?tplRichText(proj.description, proj.textAlign, proj.listType):'') +
       (proj.link?'<a href="'+esc(proj.link)+'" target="_blank" rel="noopener" style="font-size:var(--cv-fs-small);color:var(--cv-accent);text-decoration:none">🔗 '+esc(proj.link)+'</a>':'') +
       tplDocs(proj.docs) +
     '</div>';
@@ -361,7 +422,7 @@ function tplOrgEntries(og) {
   og.forEach(function(o) {
     html += '<div style="margin-bottom:var(--cv-entry-gap)">' +
       '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(o.name)+(o.role?' — <span style="font-weight:400;font-style:italic;color:var(--cv-muted)">'+esc(o.role)+'</span>':'')+'</h3>' +
-      (o.description?'<div style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-top:2px">'+esc(o.description)+'</div>':'') +
+      (o.description?tplRichText(o.description, o.textAlign, o.listType):'') +
       tplDocs(o.docs) +
     '</div>';
   });

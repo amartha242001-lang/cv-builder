@@ -447,7 +447,37 @@ function inp(label, type, val, handler, ph, cls) {
 }
 function txta(label, val, handler, ph, rows, cls) {
   cls = cls || '';
-  return '<div class="'+cls+'"><label class="field-label">'+label+'</label><textarea class="field-input" rows="'+(rows||3)+'" oninput="'+handler+'" placeholder="'+ph+'">'+esc(val)+'</textarea></div>';
+  return '<div class="'+cls+'"><label class="field-label">'+label+'</label><textarea class="field-input" rows="'+(rows||3)+'" oninput="'+handler+'" placeholder="'+ph+'" style="resize:vertical;min-height:60px">'+esc(val)+'</textarea></div>';
+}
+
+// Rich textarea: text-align toolbar + bullets/numbering + resizable
+function richTxta(label, val, handler, alignHandler, listHandler, textAlign, listType, cls) {
+  cls = cls || '';
+  textAlign = textAlign || 'left';
+  listType = listType || 'none';
+  var alignBtns = ['left','center','right','justify'].map(function(a){
+    var icons = {left:'⬅',center:'↔',right:'➡',justify:'≡'};
+    var on = textAlign === a;
+    return '<button type="button" onclick="'+alignHandler.replace('this.value',"'"+a+"'")+'" title="Rata '+a+'" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+icons[a]+'</button>';
+  }).join('');
+  var listBtns = [
+    {v:'none',  icon:'T', title:'Teks biasa'},
+    {v:'bullet',icon:'•≡', title:'Bullets'},
+    {v:'number',icon:'1≡', title:'Numbering'}
+  ].map(function(b){
+    var on = listType === b.v;
+    return '<button type="button" onclick="'+listHandler.replace('this.value',"'"+b.v+"'")+'" title="'+b.title+'" style="padding:0 6px;height:24px;border-radius:5px;font-size:11px;font-weight:600;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';
+  }).join('');
+  return '<div class="'+cls+'">'+
+    '<label class="field-label">'+label+'</label>'+
+    '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">'+
+      alignBtns+
+      '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></span>'+
+      listBtns+
+      '<span style="font-size:10px;color:#94a3b8;margin-left:6px">Format teks</span>'+
+    '</div>'+
+    '<textarea class="field-input" rows="4" oninput="'+handler+'" style="text-align:'+textAlign+';resize:vertical;min-height:80px">'+esc(val)+'</textarea>'+
+  '</div>';
 }
 
 function formPersonal() {
@@ -477,7 +507,7 @@ function formPersonal() {
     inp('Lokasi','text',p.location,"updateP('location',this.value)",'Kota, Indonesia','') +
     inp('LinkedIn','text',p.linkedin,"updateP('linkedin',this.value)",'linkedin.com/in/username','') +
     inp('Website / Portfolio','text',p.website,"updateP('website',this.value)",'www.website.com (opsional)','col-full') +
-    txta('Ringkasan Profesional',p.summary,"updateP('summary',this.value)",'Tuliskan 2-4 kalimat yang merangkum pengalaman, keahlian utama, dan value proposition Anda...',4,'col-full') +
+    richTxta('Ringkasan Profesional',p.summary,"updateP('summary',this.value)","updateP('textAlign',this.value)","updateP('listType',this.value)",p.textAlign,p.listType,'col-full') +
     '</div>' +
     '<label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:#475569;cursor:pointer"><input type="checkbox" '+(state.showQR?'checked':'')+' onchange="toggleQR()"> 📱 Tampilkan QR Code (ke LinkedIn/Website) di CV</label>' +
     atsTip('Ringkasan Profil', 'Gunakan kata kunci dari lowongan yang dituju. Sebutkan tahun pengalaman, keahlian utama, dan pencapaian terukur. Hindari kata subjektif seperti "pekerja keras" — ganti dengan bukti konkret.');
@@ -495,11 +525,16 @@ function formExperience() {
       '<label style="display:flex;align-items:center;gap:5px;margin-top:6px;font-size:11px;color:#64748b;cursor:pointer"><input type="checkbox" '+(exp.current?'checked':'')+' onchange="updExp('+exp.id+',\'current\',this.checked);render()"> Masih bekerja di sini</label></div>' +
       // Description with AI Enhancer button
       '<div class="col-full">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
           '<label class="field-label" style="margin:0">Deskripsi Tugas & Pencapaian</label>' +
-          '<button onclick="aiEnhanceExp('+exp.id+')" title="Tingkatkan dengan AI (kata kerja aksi profesional)" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;border:1px solid #c4b5fd;background:linear-gradient(135deg,#ede9fe,#f5f3ff);color:#6d28d9;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🪄 AI Enhance</button>' +
+          '<button onclick="aiEnhanceExp('+exp.id+')" title="Tingkatkan dengan AI" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;border:1px solid #c4b5fd;background:linear-gradient(135deg,#ede9fe,#f5f3ff);color:#6d28d9;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🪄 AI Enhance</button>' +
         '</div>' +
-        '<textarea class="field-input" data-exp-desc="'+exp.id+'" rows="4" oninput="updExp('+exp.id+',\'description\',this.value)" onfocus="rememberExpFocus('+exp.id+')" placeholder="Pisahkan setiap poin dengan Enter. Tips: klik 🪄 AI Enhance untuk mengubah jadi kalimat profesional.">'+esc(exp.description)+'</textarea>' +
+        '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">' +
+          ['left','center','right','justify'].map(function(a){var icons={left:'⬅',center:'↔',right:'➡',justify:'≡'};var on=(exp.textAlign||'left')===a;return '<button type="button" onclick="updExp('+exp.id+',\'textAlign\',\''+a+'\')" title="Rata '+a+'" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+icons[a]+'</button>';}).join('') +
+          '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></span>' +
+          [{v:'none',icon:'T',title:'Teks biasa'},{v:'bullet',icon:'•≡',title:'Bullets'},{v:'number',icon:'1≡',title:'Numbering'}].map(function(b){var on=(exp.listType||'none')===b.v;return '<button type="button" onclick="updExp('+exp.id+',\'listType\',\''+b.v+'\')" title="'+b.title+'" style="padding:0 6px;height:24px;border-radius:5px;font-size:11px;font-weight:600;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';}).join('') +
+        '</div>' +
+        '<textarea class="field-input" data-exp-desc="'+exp.id+'" rows="4" oninput="updExp('+exp.id+',\'description\',this.value)" onfocus="rememberExpFocus('+exp.id+')" style="text-align:'+(exp.textAlign||'left')+';resize:vertical;min-height:80px" placeholder="Pisahkan dengan Enter. Mulai baris dengan - atau 1. untuk bullet/numbering. Klik 🪄 untuk AI Enhance.">'+esc(exp.description)+'</textarea>' +
       '</div>' +
       '</div>' +
       renderDocs(exp.docs || [], 'Exp', exp.id) +
@@ -520,7 +555,15 @@ function formEducation() {
       inp('Gelar & Jurusan','text',edu.degree,"updEdu("+edu.id+",'degree',this.value)",'S1 Akuntansi','col-full') +
       inp('Tahun Mulai','text',edu.startDate,"updEdu("+edu.id+",'startDate',this.value)",'2019','') +
       inp('Tahun Selesai','text',edu.endDate,"updEdu("+edu.id+",'endDate',this.value)",'2023','') +
-      txta('Keterangan Tambahan',edu.description,"updEdu("+edu.id+",'description',this.value)",'IPK, prestasi akademik, organisasi kampus...',2,'col-full') +
+      '<div class="col-full">'+
+        '<label class="field-label">Keterangan Tambahan</label>'+
+        '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center">'+
+          ['left','center','right','justify'].map(function(a){var icons={left:'⬅',center:'↔',right:'➡',justify:'≡'};var on=(edu.textAlign||'left')===a;return '<button type="button" onclick="updEdu('+edu.id+',\'textAlign\',\''+a+'\')" title="Rata '+a+'" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+icons[a]+'</button>';}).join('')+
+          '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px"></span>'+
+          [{v:'none',icon:'T',title:'Teks biasa'},{v:'bullet',icon:'•≡',title:'Bullets'},{v:'number',icon:'1≡',title:'Numbering'}].map(function(b){var on=(edu.listType||'none')===b.v;return '<button type="button" onclick="updEdu('+edu.id+',\'listType\',\''+b.v+'\')" title="'+b.title+'" style="padding:0 6px;height:24px;border-radius:5px;font-size:11px;font-weight:600;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';}).join('')+
+        '</div>'+
+        '<textarea class="field-input" rows="3" oninput="updEdu('+edu.id+',\'description\',this.value)" style="text-align:'+(edu.textAlign||'left')+';resize:vertical;min-height:70px" placeholder="IPK, prestasi akademik, organisasi kampus...">'+esc(edu.description)+'</textarea>'+
+      '</div>' +
       '</div>' +
       renderDocs(edu.docs || [], 'Edu', edu.id) +
       '</div>';
@@ -582,7 +625,10 @@ function formProjects() {
       inp('Nama Proyek','text',proj.name,"updProj("+proj.id+",'name',this.value)",'Nama proyek','col-full') +
       inp('Peran Anda','text',proj.role,"updProj("+proj.id+",'role',this.value)",'Project Lead, Developer, dll','') +
       inp('Link Proyek (opsional)','text',proj.link,"updProj("+proj.id+",'link',this.value)",'https://...','') +
-      txta('Deskripsi Proyek',proj.description,"updProj("+proj.id+",'description',this.value)",'Jelaskan proyek, teknologi yang digunakan, dan dampaknya...',3,'col-full') +
+      '<div class="col-full">'+
+        '<label class="field-label">Deskripsi Proyek</label>'+
+        '<textarea class="field-input" rows="3" oninput="updProj('+proj.id+',\'description\',this.value)" style="resize:vertical;min-height:80px" placeholder="Jelaskan proyek, teknologi yang digunakan, dan dampaknya...">'+esc(proj.description)+'</textarea>'+
+      '</div>' +
       '</div>' +
       renderDocs(proj.docs || [], 'Proj', proj.id) +
       '</div>';
@@ -598,7 +644,10 @@ function formOrganizations() {
       '<div class="form-grid">' +
       inp('Nama Organisasi','text',org.name,"updOrg("+org.id+",'name',this.value)",'Nama organisasi','col-full') +
       inp('Peran / Jabatan','text',org.role,"updOrg("+org.id+",'role',this.value)",'Ketua, Anggota, Volunteer','col-full') +
-      txta('Deskripsi Kegiatan',org.description,"updOrg("+org.id+",'description',this.value)",'Jelaskan kontribusi dan pencapaian Anda...',2,'col-full') +
+      '<div class="col-full">'+
+        '<label class="field-label">Deskripsi Kegiatan</label>'+
+        '<textarea class="field-input" rows="2" oninput="updOrg('+org.id+',\'description\',this.value)" style="resize:vertical;min-height:60px" placeholder="Jelaskan kontribusi dan pencapaian Anda...">'+esc(org.description)+'</textarea>'+
+      '</div>' +
       '</div>' +
       renderDocs(org.docs || [], 'Org', org.id) +
       '</div>';
