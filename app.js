@@ -554,49 +554,66 @@ function richTxta(label, val, handler, alignHandler, listHandler, textAlign, lis
 // ============================================================
 // RICH TEXT FORMATTING via execCommand (no visible markers)
 // Works on contenteditable editors — no kode marker di textarea
+
+// ============================================================
+// RICH TEXT FORMATTING — execCommand with saved selection
+// Key fix: save selection range before button steals focus,
+// restore it before applying command.
 // ============================================================
 var _lastFocusedEditor = null;
+var _savedRange = null;
 
 function rememberEditor(el) {
   _lastFocusedEditor = el;
   _lastFocusedTA = el;
 }
 
-// Execute a formatting command on the active contenteditable editor
+// Save current selection (called on mousedown of B/I/U/fontSize buttons)
+function saveSelection() {
+  var sel = window.getSelection && window.getSelection();
+  if (sel && sel.rangeCount > 0) {
+    _savedRange = sel.getRangeAt(0).cloneRange();
+  }
+}
+
+// Restore saved selection into the editor
+function restoreSelection(editor) {
+  if (!_savedRange) return false;
+  editor.focus();
+  var sel = window.getSelection && window.getSelection();
+  if (sel) {
+    sel.removeAllRanges();
+    sel.addRange(_savedRange);
+    return true;
+  }
+  return false;
+}
+
+// Apply a formatting command — restores selection first
 function applyCmd(cmd, value) {
   var editor = _lastFocusedEditor;
-  if (editor && editor.contentEditable === 'true' && document.body.contains(editor)) {
-    editor.focus();
-    document.execCommand(cmd, false, value !== undefined ? value : null);
-    editor.dispatchEvent(new Event('input', {bubbles: true}));
+  if (!editor || !document.body.contains(editor)) {
+    if (typeof toast === 'function') toast('Klik pada kotak deskripsi dulu, sorot teks, lalu klik format.');
     return;
   }
-  var active = document.activeElement;
-  if (active && active.contentEditable === 'true') {
-    document.execCommand(cmd, false, value !== undefined ? value : null);
-    active.dispatchEvent(new Event('input', {bubbles: true}));
-    return;
-  }
-  if (typeof toast === 'function') toast('Klik dulu pada kotak deskripsi, sorot teks yang ingin diformat.');
+  var restored = restoreSelection(editor);
+  if (!restored) editor.focus();
+  document.execCommand(cmd, false, value !== undefined ? value : null);
+  editor.dispatchEvent(new Event('input', {bubbles: true}));
+  _savedRange = null;
 }
 
-// Bold / Italic / Underline — called from B I U buttons
-function insertFormat(cmd) {
-  applyCmd(cmd);
-}
+function insertFormat(cmd) { applyCmd(cmd); }
 
-// Font size — insert span with exact pt size around selected text
 function insertFontSize(size) {
   if (!size) return;
   var editor = _lastFocusedEditor;
-  if (!editor || editor.contentEditable !== 'true' || !document.body.contains(editor)) {
-    editor = document.activeElement;
-  }
-  if (!editor || editor.contentEditable !== 'true') {
-    if (typeof toast === 'function') toast('Klik dulu pada kotak deskripsi, sorot teks dan pilih ukuran.');
+  if (!editor || !document.body.contains(editor)) {
+    if (typeof toast === 'function') toast('Klik pada kotak deskripsi dulu, sorot teks, lalu pilih ukuran.');
     return;
   }
-  editor.focus();
+  var restored = restoreSelection(editor);
+  if (!restored) editor.focus();
   var sel = window.getSelection && window.getSelection();
   if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
     document.execCommand('insertHTML', false,
@@ -606,14 +623,16 @@ function insertFontSize(size) {
       '<span style="font-size:' + size + 'pt">\u200B</span>');
   }
   editor.dispatchEvent(new Event('input', {bubbles: true}));
+  _savedRange = null;
 }
 
 // Convert stored value (plain text or HTML) to safe innerHTML for contenteditable
 function htmlToEditorContent(val) {
   if (!val) return '';
-  if (/<[a-z][^>]*>/i.test(val)) return val; // already HTML
+  if (/<[a-z][^>]*>/i.test(val)) return val;
   return val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 }
+
 
 
 function formPersonal() {
@@ -1339,7 +1358,7 @@ function tplQuickControls() {
   html += '<button onclick="insertFormat(\'__\')" title="Underline" style="width:26px;height:26px;border-radius:6px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;text-decoration:underline;vertical-align:middle"><u>U</u></button>';
   // Font size picker — between B/I/U and Desain
   html += '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px;display:inline-block;vertical-align:middle"></span>';
-  html += '<select onchange="insertFontSize(this.value);this.value=\'\'" title="Ukuran Font — pilih teks di kotak kiri lalu pilih ukuran" style="height:26px;padding:0 2px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#374151;background:#fff;cursor:pointer;vertical-align:middle;min-width:54px">' +
+  html += 'onmousedown="saveSelection()" <select onchange="insertFontSize(this.value);this.value=\'\'" title="Ukuran Font — pilih teks di kotak kiri lalu pilih ukuran" style="height:26px;padding:0 2px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#374151;background:#fff;cursor:pointer;vertical-align:middle;min-width:54px">' +
     '<option value="" disabled selected style="color:#94a3b8">A&#8597;</option>' +
     [8,9,10,11,12,14,16,18,20,22,24,26,28,32,36,48].map(function(s){ return '<option value="'+s+'">'+s+'pt</option>'; }).join('') +
     '</select>';
