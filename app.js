@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CV Builder Pro - ATS-Friendly Resume Builder
  * Pure Vanilla JS, no framework dependencies
  * Designed for GitHub Pages static hosting
@@ -550,53 +550,71 @@ function richTxta(label, val, handler, alignHandler, listHandler, textAlign, lis
   '</div>';
 }
 
-// Insert font size marker around selected text (or at cursor)
-// Uses [sz=N]text[/sz] markers, rendered by applyInlineFormat in templates.js
-function insertFontSize(size) {
-  if (!size) return;
-  var ta = _lastFocusedTA;
-  if (!ta || !ta.parentNode) {
-    ta = document.activeElement;
-    if (!ta || ta.tagName !== 'TEXTAREA') {
-      if (typeof toast === 'function') toast('Klik dulu pada kotak teks yang ingin diformat.');
-      return;
-    }
-  }
-  var start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
-  var end   = ta.selectionEnd   != null ? ta.selectionEnd   : ta.value.length;
-  var sel = ta.value.substring(start, end);
-  var openTag  = '[sz='+size+']';
-  var closeTag = '[/sz]';
-  var replacement = sel ? openTag + sel + closeTag : openTag + closeTag;
-  ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
-  var newPos = sel ? start + replacement.length : start + openTag.length;
-  ta.setSelectionRange(newPos, newPos);
-  ta.focus();
-  ta.dispatchEvent(new Event('input', {bubbles: true}));
+
+// ============================================================
+// RICH TEXT FORMATTING via execCommand (no visible markers)
+// Works on contenteditable editors — no kode marker di textarea
+// ============================================================
+var _lastFocusedEditor = null;
+
+function rememberEditor(el) {
+  _lastFocusedEditor = el;
+  _lastFocusedTA = el;
 }
 
-// Insert text formatting marker into a textarea (Bold, Italic, Underline)
-// Uses markdown-style markers: **bold**, _italic_, __underline__
-function insertFormat(marker) {
-  var ta = _lastFocusedTA;
-  if (!ta || !ta.parentNode) {
-    // fallback: find any focused textarea
-    ta = document.activeElement;
-    if (!ta || ta.tagName !== 'TEXTAREA') {
-      if (typeof toast === 'function') toast('Klik dulu pada kotak teks yang ingin diformat.');
-      return;
-    }
+// Execute a formatting command on the active contenteditable editor
+function applyCmd(cmd, value) {
+  var editor = _lastFocusedEditor;
+  if (editor && editor.contentEditable === 'true' && document.body.contains(editor)) {
+    editor.focus();
+    document.execCommand(cmd, false, value !== undefined ? value : null);
+    editor.dispatchEvent(new Event('input', {bubbles: true}));
+    return;
   }
-  var start = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
-  var end   = ta.selectionEnd   != null ? ta.selectionEnd   : ta.value.length;
-  var sel = ta.value.substring(start, end);
-  var replacement = sel ? marker + sel + marker : marker + marker;
-  ta.value = ta.value.substring(0, start) + replacement + ta.value.substring(end);
-  var newPos = sel ? start + replacement.length : start + marker.length;
-  ta.setSelectionRange(newPos, newPos);
-  ta.focus();
-  ta.dispatchEvent(new Event('input', {bubbles: true}));
+  var active = document.activeElement;
+  if (active && active.contentEditable === 'true') {
+    document.execCommand(cmd, false, value !== undefined ? value : null);
+    active.dispatchEvent(new Event('input', {bubbles: true}));
+    return;
+  }
+  if (typeof toast === 'function') toast('Klik dulu pada kotak deskripsi, sorot teks yang ingin diformat.');
 }
+
+// Bold / Italic / Underline — called from B I U buttons
+function insertFormat(cmd) {
+  applyCmd(cmd);
+}
+
+// Font size — insert span with exact pt size around selected text
+function insertFontSize(size) {
+  if (!size) return;
+  var editor = _lastFocusedEditor;
+  if (!editor || editor.contentEditable !== 'true' || !document.body.contains(editor)) {
+    editor = document.activeElement;
+  }
+  if (!editor || editor.contentEditable !== 'true') {
+    if (typeof toast === 'function') toast('Klik dulu pada kotak deskripsi, sorot teks dan pilih ukuran.');
+    return;
+  }
+  editor.focus();
+  var sel = window.getSelection && window.getSelection();
+  if (sel && sel.rangeCount > 0 && !sel.isCollapsed) {
+    document.execCommand('insertHTML', false,
+      '<span style="font-size:' + size + 'pt">' + sel.toString() + '</span>');
+  } else {
+    document.execCommand('insertHTML', false,
+      '<span style="font-size:' + size + 'pt">\u200B</span>');
+  }
+  editor.dispatchEvent(new Event('input', {bubbles: true}));
+}
+
+// Convert stored value (plain text or HTML) to safe innerHTML for contenteditable
+function htmlToEditorContent(val) {
+  if (!val) return '';
+  if (/<[a-z][^>]*>/i.test(val)) return val; // already HTML
+  return val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
 
 function formPersonal() {
   var p = state.data.personalInfo;

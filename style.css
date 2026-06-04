@@ -474,3 +474,44 @@ body.dark-mode .cv-paper { background: #fff; }
 
 /* ============ DOC SWITCH (CV / Cover Letter) ============ */
 .doc-switch button:hover { opacity: 0.92; }
+
+/* ============ RICH TEXT EDITOR (contenteditable) ============ */
+.rich-editor {
+  cursor: text;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-soft);
+  transition: var(--transition);
+  resize: vertical;
+  overflow-y: auto;
+}
+.rich-editor:empty:before {
+  content: attr(data-placeholder);
+  color: #94a3b8;
+  pointer-events: none;
+}
+.rich-editor:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+}
+.rich-editor b, .rich-editor strong { font-weight: 700; }
+.rich-editor i, .rich-editor em { font-style: italic; }
+.rich-editor u { text-decoration: underline; }
+/* Dark mode adjustments */
+body.dark-mode .rich-editor {
+  background: #0f172a;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+body.dark-mode .rich-editor:focus {
+  border-color: #3b82f6;
+}

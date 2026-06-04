@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CV Builder Pro - Config-Driven Template Engine
  * ------------------------------------------------
  * Each template is a config object describing its layout & style.
@@ -244,8 +244,20 @@ function applyInlineFormat(text) {
 function tplRichText(text, textAlign, listType) {
   if (!text) return '';
   textAlign = textAlign || 'left';
-  listType = listType || 'none'; // 'none' | 'bullet' | 'number'
+  listType = listType || 'none';
 
+  // If content contains HTML tags (from contenteditable editor), render directly
+  if (/<[a-z][^>]*>/i.test(text)) {
+    var cleaned = text
+      .replace(/<font size="(\d)">/gi, function(m, s) {
+        var ptMap = {'1':'8','2':'10','3':'12','4':'14','5':'18','6':'24','7':'36'};
+        return '<span style="font-size:'+(ptMap[s]||'12')+'pt">';
+      })
+      .replace(/<\/font>/gi, '</span>');
+    return '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:'+textAlign+'">'+cleaned+'</div>';
+  }
+
+  // Plain text path
   var lines = text.split('\n');
   var htmlOut = '';
   var listItems = [];
@@ -255,21 +267,18 @@ function tplRichText(text, textAlign, listType) {
     var tag = listType === 'number' ? 'ol' : 'ul';
     var listStyle = listType === 'number' ? 'decimal' : 'disc';
     htmlOut += '<'+tag+' style="margin:4px 0;padding-left:18px;list-style-type:'+listStyle+';text-align:'+textAlign+'">' +
-      listItems.map(function(li){ return '<li style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-bottom:2px;line-height:var(--cv-lh)">'+applyInlineFormat(li.trim().replace(/^[-*•]\s*/,'').replace(/^\d+[.)]\s*/,''))+'</li>'; }).join('') +
+      listItems.map(function(li){ return '<li style="font-size:var(--cv-fs-body);color:var(--cv-text);margin-bottom:2px;line-height:var(--cv-lh)">'+applyInlineFormat(li.trim().replace(/^[-*\u2022]\s*/,'').replace(/^\d+[.)]\s*/,''))+'</li>'; }).join('') +
     '</'+tag+'>';
     listItems = [];
   }
 
   lines.forEach(function(line) {
     var trimmed = line.trim();
-    if (!trimmed) {
-      flushList();
-      return;
-    }
+    if (!trimmed) { flushList(); return; }
     if (listType !== 'none') {
       listItems.push(trimmed);
     } else {
-      if (/^[-*•]\s/.test(trimmed) || /^\d+[.)]\s/.test(trimmed)) {
+      if (/^[-*\u2022]\s/.test(trimmed) || /^\d+[.)]\s/.test(trimmed)) {
         listItems.push(trimmed);
       } else {
         flushList();
