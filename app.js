@@ -715,7 +715,7 @@ function formExperience() {
           '<button onclick="aiEnhanceExp('+exp.id+')" title="Tingkatkan dengan AI" style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;border:1px solid #c4b5fd;background:linear-gradient(135deg,#ede9fe,#f5f3ff);color:#6d28d9;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit">🪄 AI Enhance</button>' +
         '</div>' +
         buildToolbar(exp.id, 'Exp', exp.textAlign, exp.listType) +
-        '<textarea class="field-input" id="ta-exp-'+exp.id+'" data-exp-desc="'+exp.id+'" rows="4" oninput="updExp('+exp.id+',\'description\',this.value)" onfocus="rememberExpFocus('+exp.id+');rememberFocus(this)" style="text-align:'+(exp.textAlign||'left')+';resize:vertical;min-height:80px" placeholder="Ketik deskripsi. Klik 🪄 AI Enhance untuk format otomatis. Bullets aktif = bullet muncul di preview CV.">'+esc(exp.description)+'</textarea>' +
+        '<div class="field-input rich-editor" id="ta-exp-'+exp.id+'" contenteditable="true" ' +' oninput="updExp('+exp.id+',\'description\',this.innerHTML)" onfocus="rememberExpFocus('+exp.id+');rememberEditor(this)"' +' style="text-align:'+(exp.textAlign||'left')+';min-height:80px;max-height:220px;overflow-y:auto"' +' data-placeholder="Ketik deskripsi. Sorot teks lalu klik B I U.">'+htmlToEditorContent(exp.description)+'</div>' +
       '</div>' +
       '</div>' +
       renderDocs(exp.docs || [], 'Exp', exp.id) +
@@ -739,7 +739,7 @@ function formEducation() {
       '<div class="col-full">'+
         '<label class="field-label">Keterangan Tambahan</label>'+
         buildToolbar(edu.id, 'Edu', edu.textAlign, edu.listType)+
-        '<textarea class="field-input" id="ta-edu-'+edu.id+'" rows="3" oninput="updEdu('+edu.id+',\'description\',this.value)" onfocus="rememberFocus(this)" style="text-align:'+(edu.textAlign||'left')+';resize:vertical;min-height:70px" placeholder="IPK, prestasi akademik, organisasi kampus...">'+esc(edu.description)+'</textarea>'+
+        '<div class="field-input rich-editor" id="ta-edu-'+edu.id+'" contenteditable="true" ' +' oninput="updEdu('+edu.id+',\'description\',this.innerHTML)" onfocus="rememberEditor(this)"' +' style="text-align:'+(edu.textAlign||'left')+';min-height:70px;max-height:180px;overflow-y:auto"' +' data-placeholder="IPK, prestasi akademik, organisasi kampus...">'+htmlToEditorContent(edu.description)+'</div>'+
       '</div>' +
       '</div>' +
       renderDocs(edu.docs || [], 'Edu', edu.id) +
