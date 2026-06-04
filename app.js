@@ -934,7 +934,7 @@ function formCover() {
     inp('Tanggal Surat','text',c.date||'',"updCover('date',this.value)",'Kosongkan = tanggal hari ini','') +
     '</div>' +
     alignBtns +
-    txta('Isi Surat Lamaran',c.body||'',"updCover('body',this.value)",'Tuliskan isi surat lamaran Anda. Pisahkan paragraf dengan Enter dua kali...',12,'col-full') +
+    '<div class="col-full"><label class="field-label">Isi Surat Lamaran</label><div class="field-input rich-editor" contenteditable="true" oninput="updCover(\'body\',this.innerHTML)" onfocus="rememberEditor(this)" style="min-height:180px;max-height:400px;overflow-y:auto;text-align:'+(state.coverLetter.bodyAlign||'justify')+'" data-placeholder="Tuliskan isi surat lamaran Anda. Pisahkan paragraf dengan Enter dua kali...">'+htmlToEditorContent(c.body||'')+'</div></div>' +
     sigBlock +
     atsTip('Surat Lamaran', 'Isi "Info Pengirim Surat" di atas untuk mengisi kop surat. Klik "🔄 Sync dari CV" untuk isi otomatis, atau isi manual jika ingin berbeda dari CV.');
 }

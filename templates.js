@@ -844,13 +844,18 @@ function renderCoverLetter(cfg, vars, dens) {
   // Body — paragraphs split on blank lines
   var body = c.body || '';
   var bodyAlign = c.bodyAlign || 'justify';
-  var paras = body.split(/\n\s*\n/);
-  html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:'+bodyAlign+'">';
-  paras.forEach(function(par){
-    if (!par.trim()) return;
-    html += '<p style="margin:0 0 12px 0">'+esc(par).replace(/\n/g,'<br>')+'</p>';
-  });
-  html += '</div>';
+  // If body is HTML (from contenteditable), render directly
+  if (/<[a-z][^>]*>/i.test(body)) {
+    html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:'+bodyAlign+'">' + body + '</div>';
+  } else {
+    var paras = body.split(/\n\s*\n/);
+    html += '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:'+bodyAlign+'">';
+    paras.forEach(function(par){
+      if (!par.trim()) return;
+      html += '<p style="margin:0 0 12px 0">'+esc(par).replace(/\n/g,'<br>')+'</p>';
+    });
+    html += '</div>';
+  }
 
   // Signature block — right-aligned like the PDF sample
   // Signature uses cover letter's own sig fields — no fallback to CV personalInfo
