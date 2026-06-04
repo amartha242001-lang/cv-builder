@@ -1351,14 +1351,14 @@ function tplQuickControls() {
     var labelShort = d === 'compact' ? 'S' : d === 'normal' ? 'M' : 'L';
     html += '<button onclick="setDensity(\''+d+'\')" title="'+DENSITY_PRESETS[d].label+'" style="width:24px;height:24px;border-radius:6px;font-size:11px;font-weight:600;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer;margin:0 1px">'+labelShort+'</button>';
   });
-  // B/I/U buttons — operate on last focused textarea
+  // B/I/U — use onmousedown+preventDefault to keep selection, then execCommand
   html += '<span style="width:1px;height:20px;background:#e2e8f0;margin-left:10px;margin-right:4px;display:inline-block;vertical-align:middle"></span>';
-  html += '<button onclick="insertFormat(\'**\')" title="Bold (pilih teks dulu di kotak kiri, lalu klik)" style="width:26px;height:26px;border-radius:6px;font-size:13px;font-weight:900;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;vertical-align:middle"><b>B</b></button>';
-  html += '<button onclick="insertFormat(\'_\')" title="Italic" style="width:26px;height:26px;border-radius:6px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;font-style:italic;vertical-align:middle"><i>I</i></button>';
-  html += '<button onclick="insertFormat(\'__\')" title="Underline" style="width:26px;height:26px;border-radius:6px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;text-decoration:underline;vertical-align:middle"><u>U</u></button>';
-  // Font size picker — between B/I/U and Desain
+  html += '<button onmousedown="event.preventDefault();saveSelection()" onclick="insertFormat(\'bold\')" title="Bold — sorot teks lalu klik" style="width:26px;height:26px;border-radius:6px;font-size:13px;font-weight:900;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;vertical-align:middle"><b>B</b></button>';
+  html += '<button onmousedown="event.preventDefault();saveSelection()" onclick="insertFormat(\'italic\')" title="Italic" style="width:26px;height:26px;border-radius:6px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;font-style:italic;vertical-align:middle"><i>I</i></button>';
+  html += '<button onmousedown="event.preventDefault();saveSelection()" onclick="insertFormat(\'underline\')" title="Underline" style="width:26px;height:26px;border-radius:6px;font-size:13px;border:1px solid #e2e8f0;background:#fff;color:#1e293b;cursor:pointer;text-decoration:underline;vertical-align:middle"><u>U</u></button>';
+  // Font size picker
   html += '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 4px;display:inline-block;vertical-align:middle"></span>';
-  html += 'onmousedown="saveSelection()" <select onchange="insertFontSize(this.value);this.value=\'\'" title="Ukuran Font — pilih teks di kotak kiri lalu pilih ukuran" style="height:26px;padding:0 2px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#374151;background:#fff;cursor:pointer;vertical-align:middle;min-width:54px">' +
+  html += '<select onmousedown="saveSelection()" onchange="insertFontSize(this.value);this.value=\'\'" title="Ukuran Font — sorot teks lalu pilih ukuran" style="height:26px;padding:0 2px;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;color:#374151;background:#fff;cursor:pointer;vertical-align:middle;min-width:54px">' +
     '<option value="" disabled selected style="color:#94a3b8">A&#8597;</option>' +
     [8,9,10,11,12,14,16,18,20,22,24,26,28,32,36,48].map(function(s){ return '<option value="'+s+'">'+s+'pt</option>'; }).join('') +
     '</select>';
