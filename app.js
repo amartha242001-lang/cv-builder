@@ -1447,9 +1447,9 @@ function render() {
             '<button onclick="switchDocument(\'cover\')" style="padding:6px 12px;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;'+(state.docMode==='cover'?'background:#1e3a5f;color:#fff;box-shadow:0 1px 4px rgba(0,0,0,0.2)':'background:transparent;color:#64748b')+'">✉️ Cover Letter</button>' +
           '</div>' +
           // "⋯ Lainnya" dropdown in header — between Cover Letter and Download PDF
-          '<div style="position:relative;display:inline-block">' +
+          '<div style="display:inline-block">'   +
             '<button class="btn btn-ghost'+(secondaryActive?' active':'')+'" onclick="toggleMoreTabs()" id="moreTabsBtn" style="white-space:nowrap;flex-shrink:0;'+(secondaryActive?'background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe':'')+'">⋯ Lainnya</button>' +
-            '<div id="moreTabsMenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:200;min-width:160px;padding:6px">' +
+            '<div id="moreTabsMenu" id="moreTabsMenu_inner" style="display:none;position:fixed;top:65px;right:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.18);z-index:9999;min-width:160px;padding:6px">' +
               secondaryTabs.map(function(t){
                 var on = state.section === t.id;
                 return '<button onclick="setSection(\''+t.id+'\');closeMoreTabs()" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;border-radius:8px;font-size:12px;font-weight:'+(on?'600':'400')+';background:'+(on?'#eff6ff':'transparent')+';color:'+(on?'#1d4ed8':'#374151')+';cursor:pointer;font-family:inherit;text-align:left">'+t.icon+' '+t.label+'</button>';
