@@ -330,6 +330,25 @@ function resetData() {
   }
 }
 
+// Lightweight updaters — update state + renderPreview only (NO full re-render)
+// Used by alignment/format buttons to preserve contenteditable focus
+function updPNoRender(field, val) {
+  state.data.personalInfo[field] = val;
+  renderPreview(); autoSave();
+}
+function updExpNoRender(id, f, v) {
+  var e = state.data.experiences.find(function(x){ return x.id == id; });
+  if (e) { e[f] = v; renderPreview(); autoSave(); }
+}
+function updEduNoRender(id, f, v) {
+  var e = state.data.education.find(function(x){ return x.id == id; });
+  if (e) { e[f] = v; renderPreview(); autoSave(); }
+}
+function updOrgNoRender(id, f, v) {
+  var e = state.data.organizations.find(function(x){ return x.id == id; });
+  if (e) { e[f] = v; renderPreview(); autoSave(); }
+}
+
 // Personal
 function updateP(field, val) { state.data.personalInfo[field] = val; if(field==='textAlign'||field==='listType'){autoSave();render();}else{renderPreview();} }
 
