@@ -518,35 +518,35 @@ function richTxta(label, val, handler, alignHandler, listHandler, textAlign, lis
   textAlign = textAlign || 'left';
   listType = listType || 'none';
 
-  // Alignment buttons
+  // Alignment buttons — apply execCommand directly AND update state
+  var justifyMap = {left:'justifyLeft', center:'justifyCenter', right:'justifyRight', justify:'justifyFull'};
   var alignBtns = ['left','center','right','justify'].map(function(a){
     var icons = {left:'⬅',center:'↔',right:'➡',justify:'≡'};
     var on = textAlign === a;
-    return '<button type="button" onclick="'+alignHandler.replace('this.value',"'"+a+"'")+'" title="Rata '+a+'" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+icons[a]+'</button>';
+    var stateCmd = alignHandler.replace('this.value',"'" + a + "'");
+    var execCmd = justifyMap[a];
+    return '<button type="button" onmousedown="event.preventDefault()" onclick="'+stateCmd+';applyCmd(\''+execCmd+'\')\'" title="Rata '+a+'" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+icons[a]+'</button>';
   }).join('');
 
   // List buttons
   var listBtns = [
-    {v:'none',  icon:'T',  title:'Teks biasa'},
-    {v:'bullet',icon:'•≡', title:'Bullets'},
-    {v:'number',icon:'1≡', title:'Numbering'}
+    {v:'none', icon:'¶', title:'Teks biasa'},
+    {v:'bullet', icon:'•≡', title:'Bullets'},
+    {v:'number', icon:'1≡', title:'Numbering'}
   ].map(function(b){
     var on = listType === b.v;
-    return '<button type="button" onclick="'+listHandler.replace('this.value',"'"+b.v+"'")+'" title="'+b.title+'" style="padding:0 8px;height:24px;border-radius:5px;font-size:11px;font-weight:700;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';
+    return '<button type="button" onclick="'+listHandler.replace('this.value',"'" + b.v + "'")+'\'" title="'+b.title+'" style="padding:0 7px;height:24px;border-radius:5px;font-size:11px;font-weight:700;border:'+(on?'2px solid #2563eb':'1px solid #e2e8f0')+';background:'+(on?'#eff6ff':'#fff')+';color:'+(on?'#1d4ed8':'#64748b')+';cursor:pointer">'+b.icon+'</button>';
   }).join('');
 
-  var placeholder = listType==='bullet' ? 'Ketik setiap poin di baris baru (akan menjadi bullet di CV)' :
-                    listType==='number' ? 'Ketik setiap poin di baris baru (akan menjadi nomor di CV)' :
-                    'Tuliskan 2-4 kalimat yang merangkum pengalaman, keahlian utama, dan value proposition Anda...';
-
-  return '<div class="'+cls+'">' +
-    '<label class="field-label">'+label+'</label>' +
-    '<div style="display:flex;gap:3px;margin-bottom:4px;align-items:center;flex-wrap:wrap">' +
-      alignBtns +
-      '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 3px;display:inline-block"></span>' +
-      listBtns +
-    '</div>' +
-    '<textarea class="field-input" rows="4" oninput="'+handler+'" style="text-align:'+textAlign+';resize:vertical;min-height:80px" placeholder="'+placeholder+'">'+esc(val)+'</textarea>' +
+  return '<div class="'+cls+'">'+
+    '<label class="field-label">'+label+'</label>'+
+    '<div style="display:flex;gap:3px;margin-bottom:4px;align-items:center;flex-wrap:wrap">'+
+      alignBtns+
+      '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 3px;display:inline-block"></span>'+
+      listBtns+
+    '</div>'+
+    '<div class="field-input rich-editor" contenteditable="true" oninput="'+handler.replace('this.value','this.innerHTML')+'" onfocus="rememberEditor(this)" style="text-align:'+textAlign+';min-height:80px;max-height:240px;overflow-y:auto" data-placeholder="'+
+      (listType==='bullet'?'Ketik setiap poin di baris baru (akan menjadi bullet di CV)':listType==='number'?'Ketik setiap poin di baris baru (akan menjadi nomor di CV)':'Tuliskan 2-4 kalimat yang merangkum pengalaman, keahlian utama...')+'">'+''+htmlToEditorContent(val)+'</div>'+
   '</div>';
 }
 
