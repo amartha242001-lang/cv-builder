@@ -610,7 +610,7 @@ function renderSingleLayout(cfg, vars, dens) {
   order.forEach(function(key) {
     if (key === 'summary' && p.summary) {
       html += tplSectionHead(L('summary'), cfg);
-      html += '<p style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);margin:0'+(alignCenter?';text-align:center':'')+'">'+esc(p.summary)+'</p>';
+      html += tplRichText(p.summary, p.textAlign||(alignCenter?'center':'left'), p.listType);
     }
     else if (key === 'experience' && ex.length) {
       html += tplSectionHead(L('experience'), cfg); html += tplExpEntries(ex);
