@@ -518,46 +518,38 @@ function richTxta(label, val, handler, alignHandler, listHandler, textAlign, lis
   textAlign = textAlign || 'left';
   listType  = listType  || 'none';
 
-  var justifyMap = {left:'justifyLeft', center:'justifyCenter', right:'justifyRight', justify:'justifyFull'};
+  var justifyCmd = {left:'justifyLeft', center:'justifyCenter', right:'justifyRight', justify:'justifyFull'};
 
-  // Build alignment buttons
-  // onclick: (1) save textAlign to state without full render, (2) apply execCommand
   var alignBtns = ['left','center','right','justify'].map(function(a){
-    var icons = {left:'⬅',center:'↔',right:'➡',justify:'☰'};
+    var icons = {left:'&#8592;', center:'&#8596;', right:'&#8594;', justify:'&#9776;'};
     var on = textAlign === a;
-    // Replace handler to call updPNoRender instead of updateP (avoids re-render)
-    var saveCmd = alignHandler.replace('this.value', "'" + a + "'").replace('updateP(', 'updPNoRender(');
-    var jCmd = justifyMap[a];
-    return '<button type="button" onmousedown="event.preventDefault();saveSelection()" onclick="' + saveCmd + ';applyCmd(\'' + jCmd + '\')" title="Rata ' + a + '" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:' + (on ? '2px solid #2563eb' : '1px solid #e2e8f0') + ';background:' + (on ? '#eff6ff' : '#fff') + ';color:' + (on ? '#1d4ed8' : '#64748b') + ';cursor:pointer">' + icons[a] + '</button>';
+    var jc = justifyCmd[a];
+    // state update: replace updateP( with updPNoRender( to avoid full re-render
+    var saveCmd = alignHandler.replace('this.value', '&apos;' + a + '&apos;').replace('updateP(', 'updPNoRender(');
+    var oc = saveCmd + ';applyCmd(&apos;' + jc + '&apos;)';
+    return '<button type="button" onmousedown="event.preventDefault();saveSelection()" onclick="' + oc + '" title="Rata ' + a + '" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:' + (on?'2px solid #2563eb':'1px solid #e2e8f0') + ';background:' + (on?'#eff6ff':'#fff') + ';color:' + (on?'#1d4ed8':'#64748b') + ';cursor:pointer">' + icons[a] + '</button>';
   }).join('');
 
-  // List type buttons — these DO call render() since they change structure
-  var listBtns = [
-    {v:'none',   icon:'¶', title:'Teks biasa'},
-    {v:'bullet', icon:'•≡', title:'Bullets'},
-    {v:'number', icon:'1≡', title:'Numbering'}
-  ].map(function(b){
+  var listBtns = [{v:'none',icon:'&#182;',t:'Teks biasa'},{v:'bullet',icon:'&#8226;&#8801;',t:'Bullets'},{v:'number',icon:'1&#8801;',t:'Numbering'}].map(function(b){
     var on = listType === b.v;
-    var lCmd = listHandler.replace('this.value', "'" + b.v + "'");
-    return '<button type="button" onclick="' + lCmd + '" title="' + b.title + '" style="padding:0 7px;height:24px;border-radius:5px;font-size:11px;font-weight:700;border:' + (on ? '2px solid #2563eb' : '1px solid #e2e8f0') + ';background:' + (on ? '#eff6ff' : '#fff') + ';color:' + (on ? '#1d4ed8' : '#64748b') + ';cursor:pointer">' + b.icon + '</button>';
+    var lCmd = listHandler.replace('this.value', '&apos;' + b.v + '&apos;');
+    return '<button type="button" onclick="' + lCmd + '" title="' + b.t + '" style="padding:0 7px;height:24px;border-radius:5px;font-size:11px;font-weight:700;border:' + (on?'2px solid #2563eb':'1px solid #e2e8f0') + ';background:' + (on?'#eff6ff':'#fff') + ';color:' + (on?'#1d4ed8':'#64748b') + ';cursor:pointer">' + b.icon + '</button>';
   }).join('');
 
-  var ph = listType === 'bullet' ? 'Ketik setiap poin di baris baru (akan jadi bullet di CV)' :
-           listType === 'number' ? 'Ketik setiap poin di baris baru (akan jadi nomor di CV)' :
-           'Tuliskan 2-4 kalimat yang merangkum pengalaman, keahlian utama...';
+  var ph = listType==='bullet' ? 'Ketik setiap poin di baris baru (jadi bullet di CV)' :
+           listType==='number' ? 'Ketik setiap poin di baris baru (jadi nomor di CV)' :
+           'Tuliskan ringkasan pengalaman, keahlian utama, dan value proposition...';
 
-  var inputHandler = handler.indexOf('this.value') !== -1
-    ? handler.replace('this.value', 'this.innerHTML')
+  var inputH = handler.indexOf('this.value') !== -1
+    ? handler.replace('this.value','this.innerHTML')
     : handler;
 
   return '<div class="' + cls + '">' +
     '<label class="field-label">' + label + '</label>' +
     '<div style="display:flex;gap:3px;margin-bottom:4px;align-items:center;flex-wrap:wrap">' +
-      alignBtns +
-      '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 3px;display:inline-block"></span>' +
-      listBtns +
+      alignBtns + '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 3px;display:inline-block"></span>' + listBtns +
     '</div>' +
-    '<div class="field-input rich-editor" contenteditable="true" oninput="' + inputHandler + '" onfocus="rememberEditor(this)" style="text-align:' + textAlign + ';min-height:80px;max-height:240px;overflow-y:auto" data-placeholder="' + ph + '">' + htmlToEditorContent(val) + '</div>' +
+    '<div class="field-input rich-editor" contenteditable="true" oninput="' + inputH + '" onfocus="rememberEditor(this)" style="text-align:' + textAlign + ';min-height:80px;max-height:240px;overflow-y:auto" data-placeholder="' + ph + '">' + htmlToEditorContent(val) + '</div>' +
   '</div>';
 }
 
@@ -686,28 +678,28 @@ function buildToolbar(entityId, entityType, textAlign, listType) {
   textAlign = textAlign || 'left';
   listType  = listType  || 'none';
 
-  var justifyMap = {left:'justifyLeft', center:'justifyCenter', right:'justifyRight', justify:'justifyFull'};
-  // Use lightweight no-render updater for alignment to preserve editor focus
-  var updFnAlign = entityType === 'Exp' ? 'updExpNoRender' : entityType === 'Edu' ? 'updEduNoRender' : 'updOrgNoRender';
-  var updFn      = entityType === 'Exp' ? 'updExp'         : entityType === 'Edu' ? 'updEdu'         : 'updOrg';
+  var justifyCmd = {left:'justifyLeft', center:'justifyCenter', right:'justifyRight', justify:'justifyFull'};
+  var updA = entityType === 'Exp' ? 'updExpNoRender' : entityType === 'Edu' ? 'updEduNoRender' : 'updOrgNoRender';
+  var updL = entityType === 'Exp' ? 'updExp' : entityType === 'Edu' ? 'updEdu' : 'updOrg';
 
   var alignBtns = ['left','center','right','justify'].map(function(a){
-    var icons = {left:'⬅',center:'↔',right:'➡',justify:'☰'};
+    var icons = {left:'&#8592;', center:'&#8596;', right:'&#8594;', justify:'&#9776;'};
     var on = textAlign === a;
-    var jCmd = justifyMap[a];
-    return '<button type="button" onmousedown="event.preventDefault();saveSelection()" onclick="' + updFnAlign + '(' + entityId + ',\'textAlign\',\'' + a + '\');applyCmd(\'' + jCmd + '\')" title="Rata ' + a + '" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:' + (on ? '2px solid #2563eb' : '1px solid #e2e8f0') + ';background:' + (on ? '#eff6ff' : '#fff') + ';color:' + (on ? '#1d4ed8' : '#64748b') + ';cursor:pointer">' + icons[a] + '</button>';
+    var jc = justifyCmd[a];
+    // Use &apos; for string literals inside onclick attribute
+    var oc = updA + '(' + entityId + ',&apos;textAlign&apos;,&apos;' + a + '&apos;);applyCmd(&apos;' + jc + '&apos;)';
+    return '<button type="button" onmousedown="event.preventDefault();saveSelection()" onclick="' + oc + '" title="Rata ' + a + '" style="width:26px;height:24px;border-radius:5px;font-size:12px;border:' + (on?'2px solid #2563eb':'1px solid #e2e8f0') + ';background:' + (on?'#eff6ff':'#fff') + ';color:' + (on?'#1d4ed8':'#64748b') + ';cursor:pointer">' + icons[a] + '</button>';
   }).join('');
 
-  var listBtns = [{v:'none',icon:'¶',title:'Teks biasa'},{v:'bullet',icon:'•≡',title:'Bullets'},{v:'number',icon:'1≡',title:'Numbering'}].map(function(b){
+  var listBtns = [{v:'none',icon:'&#182;',t:'Teks biasa'},{v:'bullet',icon:'&#8226;&#8801;',t:'Bullets'},{v:'number',icon:'1&#8801;',t:'Numbering'}].map(function(b){
     var on = listType === b.v;
-    return '<button type="button" onclick="' + updFn + '(' + entityId + ',\'listType\',\'' + b.v + '\')" title="' + b.title + '" style="padding:0 7px;height:24px;border-radius:5px;font-size:11px;font-weight:700;border:' + (on ? '2px solid #2563eb' : '1px solid #e2e8f0') + ';background:' + (on ? '#eff6ff' : '#fff') + ';color:' + (on ? '#1d4ed8' : '#64748b') + ';cursor:pointer">' + b.icon + '</button>';
+    var oc = updL + '(' + entityId + ',&apos;listType&apos;,&apos;' + b.v + '&apos;)';
+    return '<button type="button" onclick="' + oc + '" title="' + b.t + '" style="padding:0 7px;height:24px;border-radius:5px;font-size:11px;font-weight:700;border:' + (on?'2px solid #2563eb':'1px solid #e2e8f0') + ';background:' + (on?'#eff6ff':'#fff') + ';color:' + (on?'#1d4ed8':'#64748b') + ';cursor:pointer">' + b.icon + '</button>';
   }).join('');
 
   return '<div style="display:flex;gap:4px;margin-bottom:4px;align-items:center;flex-wrap:wrap">' +
-    alignBtns +
-    '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 2px"></span>' +
-    listBtns +
-    '<span style="font-size:10px;color:#94a3b8;margin-left:6px">Alignment & list</span>' +
+    alignBtns + '<span style="width:1px;height:20px;background:#e2e8f0;margin:0 2px"></span>' + listBtns +
+    '<span style="font-size:10px;color:#94a3b8;margin-left:6px">Rata & list</span>' +
   '</div>';
 }
 
