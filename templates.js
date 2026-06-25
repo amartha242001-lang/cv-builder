@@ -757,7 +757,7 @@ function renderSplitLayout(cfg, vars, dens) {
 
   if (p.summary) {
     html += mainHead(L('summary'));
-    html += '<p style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);margin:0">'+esc(p.summary)+'</p>';
+    html += tplRichText(p.summary, p.textAlign || 'left', p.listType);
   }
   if (ex.length) { html += mainHead(L('experience')); html += tplExpEntries(ex); }
   if (ed.length) { html += mainHead(L('education')); html += tplEduEntries(ed); }
