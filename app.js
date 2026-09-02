@@ -19,6 +19,8 @@ var state = {
   theme: 'light',    // 'light' | 'dark' (editor chrome theme)
   showQR: false,     // show QR code (to LinkedIn/website) on CV
   fontOverride: '',  // '' = use template default font; else overrides all layouts
+  margins: { top: 20, bottom: 20, left: 22, right: 22 },
+  margins: { top: 20, bottom: 20, left: 22, right: 22 }, // page margins in mm
   sectionOrder: ['summary','experience','education','skills','certifications','projects','awards','organizations','hobbies','references','languages'],
   coverLetter: { company:'', recipient:'', position:'', date:'', body:'', bodyAlign:'justify', sigName:'', sigEmail:'', sigPhone:'', signature:'', senderName:'', senderTitle:'', senderEmail:'', senderPhone:'', senderLocation:'', senderLinkedin:'' },
   data: {
@@ -54,6 +56,8 @@ function loadSavedData() {
         if (parsed.theme) state.theme = parsed.theme;
         if (parsed.showQR !== undefined) state.showQR = parsed.showQR;
         if (parsed.fontOverride !== undefined) state.fontOverride = parsed.fontOverride;
+        if (parsed.margins) state.margins = parsed.margins;
+        if (parsed.margins) state.margins = parsed.margins;
         if (parsed.coverLetter) {
           state.coverLetter = parsed.coverLetter;
           // backward compat: ensure new fields exist
@@ -95,7 +99,7 @@ function loadSavedData() {
 // Save current data to localStorage
 function saveToStorage() {
   try {
-    var toSave = { data: state.data, template: state.template, accentColor: state.accentColor, density: state.density, lang: state.lang, sectionOrder: state.sectionOrder, docMode: state.docMode, theme: state.theme, showQR: state.showQR, fontOverride: state.fontOverride, coverLetter: state.coverLetter, savedAt: new Date().toISOString() };
+    var toSave = { data: state.data, template: state.template, accentColor: state.accentColor, density: state.density, lang: state.lang, sectionOrder: state.sectionOrder, docMode: state.docMode, theme: state.theme, showQR: state.showQR, fontOverride: state.fontOverride, margins: state.margins, coverLetter: state.coverLetter, savedAt: new Date().toISOString() };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   } catch(e) { /* storage full or unavailable */ }
 }
@@ -307,6 +311,18 @@ function setTemplate(t) {
 function setAccent(color) { state.accentColor = color; autoSave(); render(); }
 function setDensity(d) { state.density = d; autoSave(); render(); }
 function setFont(f) { state.fontOverride = f; autoSave(); render(); }
+function setMargin(side,val){var v=parseInt(val);if(isNaN(v)||v<0)v=0;if(v>60)v=60;state.margins[side]=v;autoSave();var r=document.querySelector('#cvOutput .cv-render');var m=state.margins;if(r)r.style.padding=m.top+'mm '+m.right+'mm '+m.bottom+'mm '+m.left+'mm';}
+function setMargin(side, val) {
+  var v = parseInt(val); if (isNaN(v)||v<0) v=0; if(v>60) v=60;
+  if (!state.margins) state.margins = {top:20,bottom:20,left:22,right:22};
+  state.margins[side] = v;
+  autoSave(); applyMargins();
+}
+function applyMargins() {
+  var r = document.querySelector('#cvOutput .cv-render');
+  var m = state.margins||{top:20,bottom:20,left:22,right:22};
+  if (r) r.style.padding = m.top+'mm '+m.right+'mm '+m.bottom+'mm '+m.left+'mm';
+}
 function scrollTabs(amount) {
   var el = document.getElementById('tabsScroll');
   if (el) el.scrollBy({ left: amount, behavior: 'smooth' });
@@ -487,8 +503,9 @@ function exportPDF() {
   if (!el) return;
   var name = state.data.personalInfo.fullName || 'document';
   var prefix = state.docMode === 'cover' ? 'CoverLetter_' : 'CV_';
+  var mg = state.margins || {top:20, bottom:20, left:22, right:22};
   html2pdf().set({
-    margin: 0,
+    margin: [mg.top, mg.right, mg.bottom, mg.left],
     filename: prefix + name + '.pdf',
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, letterRendering: true },
@@ -1284,6 +1301,25 @@ function formTemplate() {
   html += '</div>';
   html += '<div style="font-size:11px;color:#94a3b8;margin-bottom:18px">💡 Gunakan <b>Compact</b> agar CV pas dalam 1 halaman A4 penuh.</div>';
 
+  // ---- MARGIN CONTROLS ----
+  html += '<div style="margin-bottom:8px;font-size:12px;font-weight:600;color:#475569">📐 Margin Halaman (mm)</div>';
+  html += '<div style="font-size:11px;color:#94a3b8;margin-bottom:10px">Atur jarak tepi halaman seperti MS Word.</div>';
+  var mgv = state.margins || {top:20,bottom:20,left:22,right:22};
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">';
+  [{k:'top',l:'Atas'},{k:'bottom',l:'Bawah'},{k:'left',l:'Kiri'},{k:'right',l:'Kanan'}].forEach(function(x){
+    html += '<div><label class="field-label">'+x.l+'</label>'+
+      '<div style="display:flex;align-items:center;gap:4px">'+
+        '<input type="number" min="0" max="60" value="'+mgv[x.k]+'" oninput="setMargin(\''+x.k+'\',this.value)" style="width:56px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;text-align:center;font-family:inherit;outline:none;transition:border 0.2s">'+
+        '<span style="font-size:11px;color:#94a3b8">mm</span>'+
+      '</div></div>';
+  });
+  html += '</div>';
+  html += '<div style="display:flex;gap:6px;margin-bottom:18px">';
+  [{label:'Normal',t:20,b:20,l:22,r:22},{label:'Sempit',t:10,b:10,l:12,r:12},{label:'Lebar',t:25,b:25,l:30,r:30}].forEach(function(p){
+    html += '<button onclick="state.margins={top:'+p.t+',bottom:'+p.b+',left:'+p.l+',right:'+p.r+'};autoSave();applyMargins();setSection(\'template\')" style="flex:1;padding:6px;border-radius:8px;font-size:11px;border:1px solid #e2e8f0;background:#fff;color:#64748b;cursor:pointer;font-family:inherit;transition:all 0.2s" onmouseover="this.style.background=\'#f1f5f9\'" onmouseout="this.style.background=\'#fff\'">'+p.label+'</button>';
+  });
+  html += '</div>';
+
   // ---- FONT PICKER ----
   html += '<div style="margin-bottom:8px;font-size:12px;font-weight:600;color:#475569">Font Dokumen</div>';
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:18px">';
@@ -1402,6 +1438,7 @@ function renderPreview() {
     if (window.requestAnimationFrame) requestAnimationFrame(updatePageBreaks);
     else setTimeout(updatePageBreaks, 30);
   }
+  if (typeof applyMargins === 'function') setTimeout(applyMargins, 10);
   autoSave(); // Auto-save after every data change
 }
 
@@ -1524,6 +1561,7 @@ function render() {
       updatePageBreaks();
       if (state.section === 'template' && typeof initSectionSortable === 'function') initSectionSortable();
       // Restore tab scroll position so active tab stays in view
+      applyMargins();
       var sc = document.getElementById('tabsScroll');
       if (sc) {
         sc.scrollLeft = _tabScrollPos;
@@ -1537,6 +1575,7 @@ function render() {
     setTimeout(function(){
       updatePageBreaks();
       if (state.section === 'template' && typeof initSectionSortable === 'function') initSectionSortable();
+      applyMargins();
       var sc = document.getElementById('tabsScroll');
       if (sc) {
         sc.scrollLeft = _tabScrollPos;

@@ -560,7 +560,7 @@ function renderSingleLayout(cfg, vars, dens) {
       pr=state.data.projects, og=state.data.organizations;
 
   var pad = cfg.wideMargin ? '32mm 28mm' : '24mm 20mm';
-  var html = '<div class="cv-render" style="'+vars+'font-family:'+getActiveFont(cfg)+';padding:'+pad+';line-height:var(--cv-lh)">';
+  var html = '<div class="cv-render" style="'+vars+'font-family:'+getActiveFont(cfg)+';padding:20mm 22mm;line-height:var(--cv-lh)">';
 
   // ---- HEADER ----
   var alignCenter = cfg.headerAlign === 'center';
@@ -803,7 +803,7 @@ function renderCoverLetter(cfg, vars, dens) {
     ? { regard:'Sincerely,', re:'Re: Application for', to:'To' }
     : { regard:'Hormat saya,', re:'Perihal: Lamaran untuk posisi', to:'Kepada Yth.' };
 
-  var html = '<div class="cv-render" style="'+vars+'font-family:'+neutralCfg.font+';padding:26mm 24mm;line-height:var(--cv-lh)">';
+  var html = '<div class="cv-render" style="'+vars+'font-family:'+neutralCfg.font+';padding:20mm 22mm;line-height:var(--cv-lh)">';
 
   // Letterhead — uses cover letter's OWN sender fields, NOT CV personal info
   var sName     = c.senderName     || '';
