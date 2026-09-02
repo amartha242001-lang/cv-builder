@@ -254,7 +254,7 @@ function tplRichText(text, textAlign, listType) {
         return '<span style="font-size:'+(ptMap[s]||'12')+'pt">';
       })
       .replace(/<\/font>/gi, '</span>');
-    return '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh);text-align:'+textAlign+'">'+cleaned+'</div>';
+    return '<div style="font-size:var(--cv-fs-body);color:var(--cv-text);line-height:var(--cv-lh)">'+cleaned+'</div>';
   }
 
   // Plain text path
