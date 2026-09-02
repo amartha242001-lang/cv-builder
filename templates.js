@@ -385,7 +385,7 @@ function tplExpEntries(ex) {
         }).join('');
       }
     }
-    html += '<div style="margin-bottom:var(--cv-entry-gap)">' +
+    html += '<div style="margin-bottom:var(--cv-entry-gap);page-break-inside:avoid">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
         '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(e.position)+'</h3>' +
         '<span style="font-size:var(--cv-fs-small);color:var(--cv-muted);white-space:nowrap">'+fmtDate(e.startDate)+' — '+(e.current?L('present'):fmtDate(e.endDate))+'</span>' +
@@ -413,7 +413,7 @@ function tplEduEntries(ed) {
         }).join('');
       }
     }
-    html += '<div style="margin-bottom:var(--cv-entry-gap)">' +
+    html += '<div style="margin-bottom:var(--cv-entry-gap);page-break-inside:avoid">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline">' +
         '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(e.degree)+'</h3>' +
         '<span style="font-size:var(--cv-fs-small);color:var(--cv-muted);white-space:nowrap">'+esc(e.startDate)+' — '+esc(e.endDate)+'</span>' +
@@ -440,7 +440,7 @@ function tplCertEntries(ce) {
 function tplProjEntries(pr) {
   var html = '';
   pr.forEach(function(proj) {
-    html += '<div style="margin-bottom:var(--cv-entry-gap)">' +
+    html += '<div style="margin-bottom:var(--cv-entry-gap);page-break-inside:avoid">' +
       '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(proj.name)+(proj.role?' — <span style="font-weight:400;font-style:italic;color:var(--cv-muted)">'+esc(proj.role)+'</span>':'')+'</h3>' +
       (proj.description?tplRichText(proj.description, proj.textAlign, proj.listType):'') +
       (proj.link?'<a href="'+esc(proj.link)+'" target="_blank" rel="noopener" style="font-size:var(--cv-fs-small);color:var(--cv-accent);text-decoration:none">🔗 '+esc(proj.link)+'</a>':'') +
@@ -453,7 +453,7 @@ function tplProjEntries(pr) {
 function tplOrgEntries(og) {
   var html = '';
   og.forEach(function(o) {
-    html += '<div style="margin-bottom:var(--cv-entry-gap)">' +
+    html += '<div style="margin-bottom:var(--cv-entry-gap);page-break-inside:avoid">' +
       '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(o.name)+(o.role?' — <span style="font-weight:400;font-style:italic;color:var(--cv-muted)">'+esc(o.role)+'</span>':'')+'</h3>' +
       (o.description?tplRichText(o.description, o.textAlign, o.listType):'') +
       tplDocs(o.docs) +
@@ -481,7 +481,7 @@ function tplHobbyEntries(hb) {
 
 function tplRefEntries(rf) {
   return rf.map(function(r){
-    return '<div style="margin-bottom:var(--cv-entry-gap)">' +
+    return '<div style="margin-bottom:var(--cv-entry-gap);page-break-inside:avoid">' +
       '<h3 style="font-size:var(--cv-fs-h3);font-weight:600;color:var(--cv-text);margin:0">'+esc(r.name)+'</h3>' +
       '<div style="font-size:var(--cv-fs-small);color:var(--cv-muted)">'+esc(r.position)+(r.company?', '+esc(r.company):'')+'</div>' +
       (r.contact?'<div style="font-size:var(--cv-fs-small);color:var(--cv-accent)">'+esc(r.contact)+'</div>':'') +
